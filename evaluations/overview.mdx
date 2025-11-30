@@ -9,6 +9,35 @@ Evaluations let you verify that your AI agent performed the expected actions. In
 
 ## The Evaluation Flow
 
+<Steps>
+  <Step title="Test Definition">
+    ```json
+    {
+      "prompt": "Post 'Hello' to #general",
+      "assertions": [
+        {
+          "diff_type": "added",
+          "entity": "messages",
+          "where": {
+            "text": { "contains": "Hello" }
+          }
+        }
+      ]
+    }
+    ```
+  </Step>
+  <Step title="Agent Execution">
+    - Environment initialized from template
+    - **Before** snapshot recorded
+    - Agent executed with prompt
+    - **After** snapshot recorded
+    - Differences computed
+  </Step>
+  <Step title="New Step">
+    
+  </Step>
+</Steps>
+
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         TEST DEFINITION                              │
@@ -113,19 +142,21 @@ client.delete_env(envId=env.environmentId)
 
 Agent Diff includes pre-built benchmarks:
 
-| Benchmark | Service | Tests | Description |
-|-----------|---------|-------|-------------|
-| Slack Bench | Slack | 20 | Message sending, channel ops, reactions |
-| Linear Bench | Linear | 40 | Issue CRUD, labels, comments, workflow |
+| Benchmark    | Service | Tests | Description                             |
+| ------------ | ------- | ----- | --------------------------------------- |
+| Slack Bench  | Slack   | 20    | Message sending, channel ops, reactions |
+| Linear Bench | Linear  | 40    | Issue CRUD, labels, comments, workflow  |
 
 ## Why State-Based Evaluation?
 
 Traditional LLM evaluation checks if the output "looks right":
+
 - Fuzzy matching
 - Semantic similarity
 - Human review
 
 Agent Diff checks if the agent **actually did the right thing**:
+
 - Deterministic: Same input → Same pass/fail
 - Precise: Exact field-level assertions
 - Comprehensive: Checks all side effects
@@ -148,4 +179,3 @@ Agent Diff:
     Define expected outcomes
   </Card>
 </CardGroup>
-
