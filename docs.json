@@ -155,12 +155,6 @@
     "dark": "/logo/dark.svg"
   },
   "navbar": {
-    "links": [
-      {
-        "label": "GitHub",
-        "href": "https://github.com/hubertpysklo/agent-diff"
-      }
-    ],
     "primary": {
       "type": "link",
       "label": "Get Started",
