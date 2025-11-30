@@ -1,0 +1,57 @@
+---
+title: "Diffs"
+description: "A diff is the computed difference between the before and after states of an environment."
+---
+
+---
+
+### Structure
+
+```json
+{
+  "inserts": [
+    {
+      "__table__": "messages",
+      "message_id": "1732645891.000200",
+      "channel_id": "C01GENERAL99",
+      "user_id": "U01AGENBOT9",
+      "message_text": "Hello World!"
+    }
+  ],
+  "updates": [
+    {
+      "__table__": "channels",
+      "before": { "last_message_at": null },
+      "after": { "last_message_at": "2025-11-26T15:31:31" }
+    }
+  ],
+  "deletes": []
+}
+```
+
+### Diff Types
+
+<CardGroup cols={3}>
+  <Card title="Inserts" icon="plus">
+    New records created by the agent
+  </Card>
+  <Card title="Updates" icon="pen">
+    Existing records modified (shows before/after)
+  </Card>
+  <Card title="Deletes" icon="trash">
+    Records removed by the agent
+  </Card>
+</CardGroup>
+
+### How Diffs Are Captured
+
+Agent Diff uses PostgreSQL logical replication to capture every change:
+
+1. **WAL Capture**: All database writes are logged to the Write-Ahead Log
+2. **wal2json**: Converts WAL entries to JSON format
+3.  **Change Journal**: Filtered and stored per environment/run 
+4. **Diff Computation**: Aggregated into inserts/updates/deletes
+
+<Note>
+  This approach captures changes at the database level, so it works regardless of which API endpoint the agent used.
+</Note>
