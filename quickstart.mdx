@@ -8,54 +8,55 @@ description: "Get Agent Diff running in 5 minutes"
 <Tabs>
   <Tab title="Hosted (Recommended)">
     Use Agent Diff Cloud - no setup required:
-    
+
     1. Sign up at [agentdiff.dev](https://agentdiff.dev)
     2. Get your API key from the dashboard
     3. Skip to [Step 2: Install the SDK](#step-2-install-the-sdk)
   </Tab>
   <Tab title="Self-Hosted">
     Run Agent Diff locally with Docker
+
+    ## Step 1: Start the Backend (Self-Hosted)
+
+    <CodeGroup>
+
+    ```bash Clone & Run
+    git clone https://github.com/hubertpysklo/agent-diff.git
+    cd agent-diff/ops
+    docker-compose up
+    ```
+
+    </CodeGroup>
+
+    <Check>
+      Backend is now running at `http://localhost:8000`
+    </Check>
   </Tab>
 </Tabs>
-
-## Prerequisites (Self-Hosted Only)
-
-- Docker & Docker Compose
-- Python 3.10+ or Node.js 18+
-
-## Step 1: Start the Backend (Self-Hosted)
-
-<CodeGroup>
-```bash Clone & Run
-git clone https://github.com/hubertpysklo/agent-diff.git
-cd agent-diff/ops
-docker-compose up
-```
-</CodeGroup>
-
-<Check>
-Backend is now running at `http://localhost:8000`
-</Check>
 
 ## Step 2: Install the SDK
 
 <CodeGroup>
+
 ```bash Python
 pip install agent-diff
 # or with uv
 uv add agent-diff
 ```
 
+
 ```bash TypeScript
 npm install agent-diff
 # or with pnpm
 pnpm add agent-diff
 ```
+
 </CodeGroup>
 
 ## Step 3: Create Your First Environment
 
 <CodeGroup>
+
 ```python Python (Hosted)
 from agent_diff import AgentDiff
 
@@ -77,6 +78,7 @@ print(f"Environment: {env.environmentId}")
 print(f"API URL: {env.environmentUrl}")
 ```
 
+
 ```python Python (Self-Hosted)
 from agent_diff import AgentDiff
 
@@ -93,6 +95,7 @@ env = client.init_env(
 print(f"Environment: {env.environmentId}")
 print(f"API URL: {env.environmentUrl}")
 ```
+
 
 ```typescript TypeScript (Hosted)
 import { AgentDiff } from 'agent-diff';
@@ -115,6 +118,7 @@ console.log(`Environment: ${env.environmentId}`);
 console.log(`API URL: ${env.environmentUrl}`);
 ```
 
+
 ```typescript TypeScript (Self-Hosted)
 import { AgentDiff } from 'agent-diff';
 
@@ -130,11 +134,13 @@ const env = await client.initEnv({
 console.log(`Environment: ${env.environmentId}`);
 console.log(`API URL: ${env.environmentUrl}`);
 ```
+
 </CodeGroup>
 
 ## Step 4: Run Your Agent & Capture Diff
 
 <CodeGroup>
+
 ```python Python
 from agent_diff import PythonExecutorProxy, create_openai_tool
 from agents import Agent, Runner
@@ -168,6 +174,7 @@ print("Deletes:", diff.diff['deletes'])  # Records removed
 client.delete_env(envId=env.environmentId)
 ```
 
+
 ```typescript TypeScript
 import { TypeScriptExecutorProxy, createVercelAITool } from 'agent-diff';
 import { generateText } from 'ai';
@@ -198,6 +205,7 @@ console.log('Deletes:', diff.diff.deletes);  // Records removed
 // Cleanup
 await client.deleteEnv(env.environmentId);
 ```
+
 </CodeGroup>
 
 ## Example Output
@@ -220,7 +228,7 @@ await client.deleteEnv(env.environmentId);
 ```
 
 <Check>
-You've just run an agent against an isolated Slack replica and captured the exact changes it made!
+  You've just run an agent against an isolated Slack replica and captured the exact changes it made!
 </Check>
 
 ## What Just Happened?

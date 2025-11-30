@@ -1,22 +1,9 @@
 ---
 title: "What is Agent Diff?"
-description: "Interactive environments for evaluating AI agents & RL training on replicas of 3rd party APIs"
+description: "Interactive environments for evaluating AI agents & RL training on replicas of 3rd-party APIs"
 ---
 
-<Frame>
-  <img
-    className="block dark:hidden"
-    src="/images/hero-light.png"
-    alt="Agent Diff Hero"
-  />
-  <img
-    className="hidden dark:block"
-    src="/images/hero-dark.png"
-    alt="Agent Diff Hero"
-  />
-</Frame>
-
-## The Problem
+## Why Agent Diff?
 
 Building AI agents that interact with external APIs (Slack, Linear, Jira, etc.) is painful:
 
@@ -30,8 +17,8 @@ Building AI agents that interact with external APIs (Slack, Linear, Jira, etc.) 
   <Card title="Non-Deterministic" icon="shuffle">
     External service state changes between runs, making tests flaky
   </Card>
-  <Card title="Expensive" icon="dollar-sign">
-    Paying for API calls during development and evaluation adds up fast
+  <Card title="State tracking" icon="look">
+    You can't track if the agent actually did what you wanted it to do
   </Card>
 </CardGroup>
 
@@ -75,10 +62,9 @@ Building AI agents that interact with external APIs (Slack, Linear, Jira, etc.) 
   <Accordion title="Isolated Environments" icon="box">
     Each test gets its own database schema with seed data. No cross-contamination between tests or users.
   </Accordion>
-  
   <Accordion title="Deterministic Diffs" icon="code-compare">
     Capture the exact state changes your agent made: inserts, updates, and deletes across all tables.
-    
+
     ```python
     diff = client.diff_run(runId=run.runId)
     print(diff.diff['inserts'])  # New records created
@@ -86,10 +72,9 @@ Building AI agents that interact with external APIs (Slack, Linear, Jira, etc.) 
     print(diff.diff['deletes'])  # Records removed
     ```
   </Accordion>
-  
   <Accordion title="Assertion DSL" icon="check-double">
     Define expected outcomes in JSON and automatically evaluate agent performance.
-    
+
     ```json
     {
       "assertions": [{
@@ -104,11 +89,9 @@ Building AI agents that interact with external APIs (Slack, Linear, Jira, etc.) 
     }
     ```
   </Accordion>
-  
   <Accordion title="Framework Agnostic" icon="plug">
     Works with any agent framework: OpenAI Agents SDK, LangChain, Vercel AI SDK, smolagents, or custom agents.
   </Accordion>
-  
   <Accordion title="Self-Hosted" icon="server">
     Run locally with Docker or deploy to your own infrastructure. Your data never leaves your control.
   </Accordion>
@@ -126,7 +109,7 @@ Building AI agents that interact with external APIs (Slack, Linear, Jira, etc.) 
 </CardGroup>
 
 <Note>
-More APIs coming soon. [Request an integration →](https://github.com/hubertpysklo/agent-diff/issues)
+  More APIs coming soon. [Request an integration →](https://github.com/hubertpysklo/agent-diff/issues)
 </Note>
 
 ## How It Works
@@ -134,27 +117,28 @@ More APIs coming soon. [Request an integration →](https://github.com/hubertpys
 <Steps>
   <Step title="Create Environment">
     Initialize an isolated environment from a template with seed data
+
     ```python
     env = client.init_env(templateService="slack", templateName="slack_default")
     ```
   </Step>
-  
   <Step title="Start Run">
     Take a "before" snapshot and begin capturing changes
+
     ```python
     run = client.start_run(envId=env.environmentId)
     ```
   </Step>
-  
   <Step title="Run Agent">
     Your agent interacts with the isolated API replica
+
     ```python
     agent.run("Post 'Hello' to #general on Slack")
     ```
   </Step>
-  
   <Step title="Get Diff">
     Compute the diff between before/after states
+
     ```python
     result = client.diff_run(runId=run.runId)
     ```
@@ -177,4 +161,3 @@ More APIs coming soon. [Request an integration →](https://github.com/hubertpys
     Full SDK reference for TypeScript
   </Card>
 </CardGroup>
-
