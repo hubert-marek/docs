@@ -4,16 +4,16 @@ description: "Interactive environments for evaluating AI agents & RL training on
 ---
 
 <CardGroup cols={2}>
-  <Card title="Templates" icon="slack" href="/services/slack/overview">
+  <Card title="Templates" icon="copy" href="/core-concepts/environments">
     Templates are pre-configured database schemas that serve as starting points for test environments. Think of them as **snapshots of a service's state** that your agent will interact with.
   </Card>
-  <Card title="Enviroments" icon="square-kanban" href="/services/linear/overview">
+  <Card title="Environments" icon="server" href="/core-concepts/environments">
     Environments are isolated, ephemeral copies of templates where your agents operate. **Each environment gets its own base API URL** that you can proxy to your agents.
   </Card>
-  <Card title="Test Runs & Diffs" icon="square-kanban" href="/services/linear/overview">
+  <Card title="Runs & Diffs" icon="code-compare" href="/core-concepts/diffs">
     A run represents a single test session within an environment. **Starting a run takes a snapshot, and ending it takes another one and returns a diff** - computed difference between the before and after states of an environment.
   </Card>
-  <Card title="Evaluations" icon="square-kanban" href="/services/linear/overview">
+  <Card title="Evaluations" icon="check" href="/core-concepts/diffs">
     Evaluations let you verify that your AI agent performed the expected actions. You can create your own test suites that will **compare expected state change to diff results**, or use our example ones for Linear and Slack. 
   </Card>
 </CardGroup>
@@ -39,8 +39,8 @@ description: "Interactive environments for evaluating AI agents & RL training on
   <Card title="Quickstart" icon="rocket" href="/quickstart">
     Get up and running in 5 minutes
   </Card>
-  <Card title="Core Concepts" icon="book" href="/concepts">
-    Understand environments, templates, and diffs
+  <Card title="Example Benchmarks" icon="chart-line" href="/test-suites/benchmarks">
+    See built-in evaluation suites
   </Card>
   <Card title="Python SDK" icon="python" href="/sdks/python/installation">
     Full SDK reference for Python

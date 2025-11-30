@@ -11,6 +11,10 @@ A test suite is a collection of related tests that share:
 - A template/seed configuration
 - Related functionality being tested
 
+<Tip>
+  **See real examples**: [Slack Bench](https://github.com/hubertpysklo/agent-diff/tree/main/examples/slack/testsuites) | [Linear Bench](https://github.com/hubertpysklo/agent-diff/tree/main/examples/linear/testsuites) | [HuggingFace Dataset](https://huggingface.co/datasets/hubertmarek/linear-bench-mini)
+</Tip>
+
 ## Test Suite Structure
 
 ```json
@@ -203,10 +207,10 @@ for r in results:
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Writing Assertions" icon="pen" href="/evaluations/writing-assertions">
-    Define expected outcomes
+  <Card title="Assertions" icon="pen" href="/core-concepts/assertions">
+    Define expected outcomes with the DSL
   </Card>
-  <Card title="DSL Reference" icon="code" href="/evaluations/dsl-reference">
-    All operators and predicates
+  <Card title="Example Benchmarks" icon="chart-line" href="/test-suites/benchmarks">
+    See built-in Slack and Linear suites
   </Card>
 </CardGroup>

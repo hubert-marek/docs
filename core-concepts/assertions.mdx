@@ -1,11 +1,13 @@
 ---
-title: "DSL Reference"
-description: "Complete reference for the evaluation DSL"
+title: "Writing Assertions"
+description: "Define expected outcomes for your agent tests with the evaluation DSL"
 ---
 
-## Schema
+## Overview
 
-The evaluation DSL is a JSON format for defining expected database state changes.
+Assertions describe what database changes you expect after the agent runs. They're written in a JSON DSL that gets evaluated against the computed diff.
+
+## Schema
 
 ```json
 {
@@ -22,14 +24,14 @@ The evaluation DSL is a JSON format for defining expected database state changes
 }
 ```
 
-## Top-Level Fields
+### Top-Level Fields
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `strict` | boolean | No | Fail if extra changes exist (default: false) |
 | `assertions` | array | Yes | List of assertions to evaluate |
 
-## Assertion Fields
+### Assertion Fields
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -39,6 +41,8 @@ The evaluation DSL is a JSON format for defining expected database state changes
 | `expected_count` | number/object | No | How many records should match |
 | `expected_changes` | object | No | Field changes to verify (for `changed`) |
 
+---
+
 ## Diff Types
 
 | Type | Description |
@@ -47,6 +51,55 @@ The evaluation DSL is a JSON format for defining expected database state changes
 | `changed` | Existing records were updated |
 | `removed` | Records were deleted |
 | `unchanged` | Records exist and weren't modified |
+
+### `added` - New Records
+
+Check that new rows were inserted:
+
+```json
+{
+  "diff_type": "added",
+  "entity": "messages",
+  "where": {
+    "message_text": {"contains": "Hello"}
+  },
+  "expected_count": 1
+}
+```
+
+### `changed` - Modified Records
+
+Check that existing rows were updated:
+
+```json
+{
+  "diff_type": "changed",
+  "entity": "issues",
+  "where": {
+    "id": {"eq": "issue-123"}
+  },
+  "expected_changes": {
+    "status": {"to": {"eq": "Done"}}
+  }
+}
+```
+
+### `removed` - Deleted Records
+
+Check that rows were deleted:
+
+```json
+{
+  "diff_type": "removed",
+  "entity": "messages",
+  "where": {
+    "message_id": {"eq": "1234567890.000100"}
+  },
+  "expected_count": 1
+}
+```
+
+---
 
 ## Predicate Operators
 
@@ -96,7 +149,9 @@ The evaluation DSL is a JSON format for defining expected database state changes
 | `has_any` | Array contains any of | `{"labels": {"has_any": ["bug", "urgent"]}}` |
 | `has_all` | Array contains all of | `{"labels": {"has_all": ["bug", "p1"]}}` |
 
-## Logical Combinators
+---
+
+## Combining Predicates
 
 ### AND (implicit)
 
@@ -105,8 +160,9 @@ Multiple conditions in `where` are ANDed:
 ```json
 {
   "where": {
-    "status": {"eq": "Done"},
-    "priority": {"lt": 3}
+    "channel_id": {"eq": "C01GENERAL99"},
+    "message_text": {"contains": "hello"},
+    "user_id": {"eq": "U01AGENBOT9"}
   }
 }
 ```
@@ -153,23 +209,27 @@ Multiple conditions in `where` are ANDed:
 }
 ```
 
+---
+
 ## Expected Count
 
 ### Exact Count
 
 ```json
-{"expected_count": 1}
-{"expected_count": 0}
-{"expected_count": 5}
+{"expected_count": 1}           // Exactly 1 record
+{"expected_count": 0}           // No records
+{"expected_count": 5}           // Exactly 5 records
 ```
 
 ### Bounded Count
 
 ```json
-{"expected_count": {"min": 1}}
-{"expected_count": {"max": 5}}
-{"expected_count": {"min": 1, "max": 10}}
+{"expected_count": {"min": 1}}           // At least 1
+{"expected_count": {"max": 5}}           // At most 5
+{"expected_count": {"min": 1, "max": 10}} // Between 1 and 10
 ```
+
+---
 
 ## Expected Changes
 
@@ -210,7 +270,67 @@ For `diff_type: "changed"`, specify field transitions:
 }
 ```
 
-## Complete Example
+---
+
+## Strict Mode
+
+With `strict: true`, the evaluation fails if there are changes beyond what's asserted:
+
+```json
+{
+  "strict": true,
+  "assertions": [{
+    "diff_type": "changed",
+    "entity": "issues",
+    "expected_changes": {
+      "status": {"to": {"eq": "Done"}}
+    }
+  }]
+}
+```
+
+<Note>
+If `strict: true` and the agent also changed `priority`, the assertion fails even if `status` was correctly changed.
+</Note>
+
+---
+
+## Complete Examples
+
+### Slack: Post Message to Channel
+
+```json
+{
+  "assertions": [{
+    "diff_type": "added",
+    "entity": "messages",
+    "where": {
+      "channel_id": {"eq": "C01GENERAL99"},
+      "message_text": {"contains": "Hello"},
+      "user_id": {"eq": "U01AGENBOT9"}
+    },
+    "expected_count": 1
+  }]
+}
+```
+
+### Slack: Add Reaction
+
+```json
+{
+  "assertions": [{
+    "diff_type": "added",
+    "entity": "reactions",
+    "where": {
+      "message_id": {"eq": "1234567890.000100"},
+      "reaction_name": {"eq": "thumbsup"}
+    },
+    "expected_count": 1
+  }]
+}
+```
+
+### Linear: Create Issue with Label
 
 ```json
 {
@@ -240,18 +360,29 @@ For `diff_type: "changed"`, specify field transitions:
           "to": {"eq": 6}
         }
       }
-    },
-    {
-      "diff_type": "added",
-      "entity": "comments",
-      "where": {
-        "body": {"contains": "Created issue"}
-      },
-      "expected_count": {"min": 0, "max": 1}
     }
   ]
 }
 ```
+
+### Linear: Update Issue Priority
+
+```json
+{
+  "assertions": [{
+    "diff_type": "changed",
+    "entity": "issues",
+    "where": {
+      "title": {"contains": "login bug"}
+    },
+    "expected_changes": {
+      "priority": {"to": {"eq": 1}}
+    }
+  }]
+}
+```
+
+---
 
 ## Table Names by Service
 
@@ -278,14 +409,15 @@ For `diff_type: "changed"`, specify field transitions:
 | `projects` | Projects |
 | `cycles` | Cycles/sprints |
 
+---
+
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Writing Assertions" icon="pen" href="/evaluations/writing-assertions">
-    Practical examples
+  <Card title="Example Benchmarks" icon="chart-line" href="/test-suites/benchmarks">
+    See built-in Slack and Linear test suites
   </Card>
-  <Card title="Run Benchmarks" icon="chart-line" href="/evaluations/benchmarks">
-    Scale your evaluations
+  <Card title="Creating Test Suites" icon="folder" href="/test-suites/creating-suites">
+    Organize and manage your tests
   </Card>
 </CardGroup>
-

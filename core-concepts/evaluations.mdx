@@ -1,0 +1,80 @@
+---
+title: "Evaluations"
+description: "Verify your AI agent performed the expected actions"
+---
+
+## What Are Evaluations?
+
+Evaluations let you verify that your AI agent performed the expected actions. Instead of checking if the agent "said the right thing", you check if it **did the right thing** by examining database state changes.
+
+<CardGroup cols={2}>
+  <Card title="Traditional Evaluation" icon="xmark">
+    "Did the agent say it posted a message?" → Maybe ✓
+  </Card>
+  <Card title="Agent Diff Evaluation" icon="check">
+    "Is there a new row in messages table?" → Definite ✓ or ✗
+  </Card>
+</CardGroup>
+
+## Quick Example
+
+```python
+from agent_diff import AgentDiff, PythonExecutorProxy, create_openai_tool
+from agents import Agent, Runner
+
+client = AgentDiff()
+
+# Get a test from the built-in Slack Bench suite
+suites = client.list_test_suites(name="Slack Bench")
+suite = client.get_test_suite(suites.testSuites[0].id, expand=True)
+test = suite.tests[0]
+
+# Create environment and start run
+env = client.init_env(testId=test.id)
+run = client.start_run(envId=env.environmentId, testId=test.id)
+
+# Run your agent
+executor = PythonExecutorProxy(env.environmentId, client.base_url)
+agent = Agent(
+    name="Test Agent",
+    tools=[create_openai_tool(executor)],
+    instructions="Use execute_python to interact with Slack at https://slack.com/api/*"
+)
+await Runner.run(agent, test.prompt)
+
+# Evaluate against assertions
+result = client.evaluate_run(runId=run.runId)
+
+print(f"Result: {'✓ PASSED' if result.passed else '✗ FAILED'}")
+print(f"Score: {result.score}")
+if result.failures:
+    print(f"Failures: {result.failures}")
+
+# Cleanup
+client.delete_env(envId=env.environmentId)
+```
+
+<Tip>
+  **Try the built-in benchmarks**: [Slack Bench](https://github.com/hubertpysklo/agent-diff/tree/main/examples/slack/testsuites) | [Linear Bench](https://github.com/hubertpysklo/agent-diff/tree/main/examples/linear/testsuites) | [HuggingFace Dataset](https://huggingface.co/datasets/hubertmarek/linear-bench-mini)
+</Tip>
+
+## Why State-Based Evaluation?
+
+| Traditional LLM Eval | Agent Diff |
+|---------------------|------------|
+| Fuzzy matching | Deterministic pass/fail |
+| Semantic similarity | Exact field-level assertions |
+| Human review needed | Automated verification |
+| Checks output text | Checks actual side effects |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Assertions" icon="pen" href="/core-concepts/assertions">
+    Define expected outcomes with the DSL
+  </Card>
+  <Card title="Example Benchmarks" icon="chart-line" href="/test-suites/benchmarks">
+    See built-in Slack and Linear test suites
+  </Card>
+</CardGroup>
+

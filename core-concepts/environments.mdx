@@ -1,0 +1,187 @@
+---
+title: "Environments & Templates"
+description: "Understanding isolated test environments and their starting states"
+---
+
+## How It Works
+
+Agent Diff uses **templates** and **environments** to create isolated test spaces:
+
+<CardGroup cols={2}>
+  <Card title="Template" icon="copy">
+    A snapshot of a service's state (users, channels, messages, etc.) that serves as a starting point.
+  </Card>
+  <Card title="Environment" icon="server">
+    An isolated copy of a template where your agent operates. Each test gets its own environment.
+  </Card>
+</CardGroup>
+
+<Steps>
+  <Step title="Clone Template">
+    When you create an environment, Agent Diff clones the template's data into a fresh database schema.
+  </Step>
+  <Step title="Agent Operates">
+    Your agent makes API calls against the isolated environment. Changes only affect this environment.
+  </Step>
+  <Step title="Capture Diff">
+    After the agent runs, the system computes what changed (inserts, updates, deletes).
+  </Step>
+</Steps>
+
+---
+
+## Templates
+
+Templates are pre-configured database schemas that serve as starting points.
+
+### Built-in Templates
+
+| Template              | Service | Description                                |
+| --------------------- | ------- | ------------------------------------------ |
+| `slack_default`       | Slack   | 3 users, 2 channels, 3 messages            |
+| `slack_bench_default` | Slack   | Extended seed for benchmarks               |
+| `linear_default`      | Linear  | Basic teams, users, issues                 |
+| `linear_expanded`     | Linear  | Full seed with projects, cycles, workflows |
+
+### What's Inside a Template?
+
+<Tabs>
+  <Tab title="Slack">
+    **`slack_default` contains:**
+
+    | Entity | Examples |
+    |--------|----------|
+    | Users | `U01AGENBOT9` (agent), `U02JOHNDOE1` (John), `U03JANEDOE2` (Jane) |
+    | Channels | `#general`, `#random` |
+    | Messages | Pre-seeded conversations |
+    
+    <Tip>Use `U01AGENBOT9` as your `impersonateUserId` - this is the agent's identity.</Tip>
+  </Tab>
+  <Tab title="Linear">
+    **`linear_default` contains:**
+
+    | Entity | Examples |
+    |--------|----------|
+    | Teams | Engineering (ENG), Growth (GRO) |
+    | Users | Agent Bot (`2790a7ee-fde0-4537-9588-e233aa5a68d1`), John, Sarah |
+    | Issues | ENG-1, ENG-2, etc. |
+    | Workflow States | Backlog, In Progress, Done |
+    
+    <Tip>Use `2790a7ee-fde0-4537-9588-e233aa5a68d1` as your `impersonateUserId` - this is the agent's identity.</Tip>
+  </Tab>
+</Tabs>
+
+<Tip>
+  **View seed files on GitHub**: [Slack seeds](https://github.com/hubertpysklo/agent-diff/tree/main/examples/slack/seeds) | [Linear seeds](https://github.com/hubertpysklo/agent-diff/tree/main/examples/linear/seeds)
+</Tip>
+
+---
+
+## Environments
+
+Environments are isolated, ephemeral copies of templates where your agents operate.
+
+### Creating an Environment
+
+```python
+from agent_diff import AgentDiff
+
+client = AgentDiff()
+
+# Create environment from template
+env = client.init_env(
+    templateService="slack",
+    templateName="slack_default",
+    impersonateUserId="U01AGENBOT9",  # Which user the agent acts as
+    ttlSeconds=3600  # Auto-cleanup after 1 hour
+)
+
+print(f"Environment ID: {env.environmentId}")
+print(f"API URL: {env.environmentUrl}")
+```
+
+### Key Properties
+
+| Property         | Description                      |
+| ---------------- | -------------------------------- |
+| `environmentId`  | Unique identifier (UUID)         |
+| `environmentUrl` | Base URL for API calls           |
+| `expiresAt`      | Auto-cleanup time (based on TTL) |
+| `status`         | `ready`, `expired`, `deleted`    |
+
+### Isolation Guarantees
+
+Each environment has:
+
+- **Separate database schema**: No cross-contamination between tests
+- **Independent state**: Changes don't affect other environments or templates
+- **Own API endpoint**: Unique URL for routing agent requests
+
+### Querying Environment Data
+
+```python
+import requests
+
+# List all channels in the environment
+response = requests.get(f"{env.environmentUrl}/conversations.list")
+channels = response.json()["channels"]
+for ch in channels:
+    print(f"#{ch['name']} ({ch['id']})")
+
+# List all users
+response = requests.get(f"{env.environmentUrl}/users.list")
+users = response.json()["members"]
+for u in users:
+    print(f"@{u['name']} ({u['id']})")
+```
+
+### Cleanup
+
+```python
+# Manual cleanup
+client.delete_env(envId=env.environmentId)
+
+# Or let TTL expire automatically
+```
+
+---
+
+## Creating Custom Templates
+
+You can create a template from any environment:
+
+```python
+# 1. Start with a base template
+env = client.init_env(templateService="slack", templateName="slack_default")
+
+# 2. Customize it via API
+import requests
+requests.post(f"{env.environmentUrl}/conversations.create", json={
+    "name": "engineering"
+})
+requests.post(f"{env.environmentUrl}/chat.postMessage", json={
+    "channel": "C01GENERAL99",
+    "text": "Custom seed message!"
+})
+
+# 3. Save as a new template
+custom = client.create_template_from_environment(
+    environmentId=env.environmentId,
+    service="slack",
+    name="my_custom_template",
+    description="My customized Slack workspace",
+    visibility="private"
+)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Runs & Diffs" icon="code-compare" href="/core-concepts/diffs">
+    Learn how state changes are captured
+  </Card>
+  <Card title="Assertions" icon="check" href="/core-concepts/assertions">
+    Define expected outcomes
+  </Card>
+</CardGroup>
+

@@ -13,10 +13,10 @@ from agent_diff import AgentDiff
 client = AgentDiff()
 
 env = client.init_env(
-    templateService="slack",       # Service type: "slack" or "linear"
-    templateName="slack_default",  # Template to clone from
-    impersonateUserId="U01AGENBOT9",  # User ID agent will act as
-    ttlSeconds=3600  # Auto-cleanup after 1 hour (default: 1800)
+    templateService="slack",
+    templateName="slack_default",
+    impersonateUserId="U01AGENBOT9",
+    ttlSeconds=3600
 )
 
 print(f"Environment ID: {env.environmentId}")
@@ -24,6 +24,20 @@ print(f"API URL: {env.environmentUrl}")
 print(f"Schema: {env.schemaName}")
 print(f"Expires: {env.expiresAt}")
 ```
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `templateService` | string | Yes* | Service type: `"slack"` or `"linear"` |
+| `templateName` | string | Yes* | Template to clone from (e.g., `"slack_default"`) |
+| `impersonateUserId` | string | Yes* | User ID the agent will act as |
+| `testId` | UUID | Yes* | Test ID (alternative to template params) |
+| `ttlSeconds` | int | No | Auto-cleanup time in seconds (default: 1800) |
+
+<Note>
+  Either provide `templateService` + `templateName` + `impersonateUserId`, OR provide `testId` (which includes all template info).
+</Note>
 
 ### Delete Environment
 
@@ -49,6 +63,13 @@ print(f"Run ID: {run.runId}")
 print(f"Status: {run.status}")  # "running"
 ```
 
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `envId` | string | Yes | Environment ID to run in |
+| `testId` | UUID | No | Test ID (for evaluation with assertions) |
+
 ### Get Diff
 
 After your agent has made changes:
@@ -62,6 +83,12 @@ print("Modified records:", diff.diff['updates'])
 print("Deleted records:", diff.diff['deletes'])
 ```
 
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `runId` | string | Yes | Run ID to compute diff for |
+
 ### Evaluate Run
 
 If you have a test with assertions:
@@ -74,6 +101,12 @@ print(f"Passed: {result.passed}")
 print(f"Score: {result.score}")
 ```
 
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `runId` | string | Yes | Run ID to evaluate |
+
 ### Get Results
 
 ```python
@@ -83,6 +116,12 @@ print(f"Status: {results.status}")
 print(f"Failures: {results.failures}")
 print(f"Diff: {results.diff}")
 ```
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `runId` | string | Yes | Run ID to get results for |
 
 ---
 
@@ -97,6 +136,16 @@ for t in templates.templates:
     print(f"- {t.name} ({t.service})")
     print(f"  Description: {t.description}")
     print(f"  Visibility: {t.visibility}")
+```
+
+### Get Template
+
+```python
+from uuid import UUID
+
+template = client.get_template(UUID("your-template-uuid"))
+print(f"Template: {template.name}")
+print(f"Service: {template.service}")
 ```
 
 ### Create Custom Template
@@ -123,6 +172,16 @@ custom = client.create_template_from_environment(
 print(f"Created template: {custom.templateId}")
 ```
 
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `environmentId` | string | Yes | Environment ID to create template from |
+| `service` | string | Yes | Service type: `"slack"` or `"linear"` |
+| `name` | string | Yes | Name for the new template |
+| `description` | string | No | Description of the template |
+| `visibility` | string | No | `"public"` or `"private"` (default: `"private"`) |
+
 ---
 
 ## Test Suite Management
@@ -130,7 +189,14 @@ print(f"Created template: {custom.templateId}")
 ### List Test Suites
 
 ```python
+# List all visible suites
 suites = client.list_test_suites()
+
+# Filter by name
+suites = client.list_test_suites(name="Slack Bench")
+
+# Filter by visibility
+suites = client.list_test_suites(visibility="public")
 
 for suite in suites.testSuites:
     print(f"- {suite.name} (ID: {suite.id})")
@@ -145,6 +211,71 @@ suite = client.get_test_suite(suite_id, expand=True)
 print(f"Suite: {suite.name}")
 for test in suite.tests:
     print(f"  - {test.name}: {test.prompt}")
+```
+
+### Get Individual Test
+
+```python
+test = client.get_test(test_id="your-test-uuid")
+print(f"Test: {test.name}")
+print(f"Prompt: {test.prompt}")
+```
+
+### Create Test Suite
+
+```python
+suite = client.create_test_suite(
+    name="My Agent Tests",
+    description="Custom tests for my Slack agent",
+    templateService="slack",
+    templateName="slack_default",
+    impersonateUserId="U01AGENBOT9",
+    visibility="private"
+)
+
+print(f"Created suite: {suite.suiteId}")
+```
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Name for the test suite |
+| `templateService` | string | Yes | Service type: `"slack"` or `"linear"` |
+| `templateName` | string | Yes | Template to use for tests |
+| `impersonateUserId` | string | Yes | User ID the agent will act as |
+| `description` | string | No | Description of the suite |
+| `visibility` | string | No | `"public"` or `"private"` (default: `"private"`) |
+
+### Add Tests to Suite
+
+```python
+# Add multiple tests
+response = client.create_tests(suite_id, CreateTestsRequest(tests=[
+    TestItem(
+        name="Post message",
+        prompt="Post 'Hello' to #general",
+        expectedOutput={
+            "assertions": [{
+                "diff_type": "added",
+                "entity": "messages",
+                "where": {"message_text": {"contains": "Hello"}}
+            }]
+        }
+    )
+]))
+
+# Or add a single test
+test = client.create_test(suite_id, {
+    "name": "Add reaction",
+    "prompt": "React with 👍 to the latest message",
+    "expectedOutput": {
+        "assertions": [{
+            "diff_type": "added",
+            "entity": "reactions"
+        }]
+    }
+})
 ```
 
 ### Run Test from Suite
@@ -215,10 +346,10 @@ print("\n✓ Environment cleaned up")
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Code Executors" icon="code" href="/executors/how-it-works">
+  <Card title="Code Executors" icon="code" href="/integrating-with-agents/how-it-works">
     Use proxy tools for agent frameworks
   </Card>
-  <Card title="OpenAI Agents" icon="robot" href="/sdks/python/openai-agents">
+  <Card title="OpenAI Agents" icon="robot" href="/integrating-with-agents/openai-agents">
     Integrate with OpenAI Agents SDK
   </Card>
 </CardGroup>

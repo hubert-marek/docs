@@ -1,0 +1,107 @@
+---
+title: "Runs & Diffs"
+description: "How test runs capture state changes"
+---
+
+## Runs
+
+A run represents a single test session within an environment. Starting a run captures a "before" snapshot, and ending it captures an "after" snapshot to compute the diff.
+
+### Run Lifecycle
+
+<Steps>
+  <Step title="Start Run">
+    Takes a "before" snapshot of the environment state
+
+    ```python
+    run = client.start_run(envId=env.environmentId)
+    ```
+  </Step>
+  <Step title="Agent Execution">
+    Your agent makes API calls that modify the environment
+  </Step>
+  <Step title="Compute Diff">
+    Compares before/after states to produce a diff
+
+    ```python
+    result = client.diff_run(runId=run.runId)
+    ```
+  </Step>
+</Steps>
+
+### Run Properties
+
+| Property         | Description                        |
+| ---------------- | ---------------------------------- |
+| `runId`          | Unique identifier                  |
+| `status`         | `running`, `completed`, `failed`   |
+| `beforeSnapshot` | Snapshot ID before agent execution |
+| `afterSnapshot`  | Snapshot ID after agent execution  |
+
+---
+
+## Diffs
+
+A diff is the computed difference between the before and after states of an environment.
+
+### Structure
+
+```json
+{
+  "inserts": [
+    {
+      "__table__": "messages",
+      "message_id": "1732645891.000200",
+      "channel_id": "C01GENERAL99",
+      "user_id": "U01AGENBOT9",
+      "message_text": "Hello World!"
+    }
+  ],
+  "updates": [
+    {
+      "__table__": "channels",
+      "before": { "last_message_at": null },
+      "after": { "last_message_at": "2025-11-26T15:31:31" }
+    }
+  ],
+  "deletes": []
+}
+```
+
+### Diff Types
+
+<CardGroup cols={3}>
+  <Card title="Inserts" icon="plus">
+    New records created by the agent
+  </Card>
+  <Card title="Updates" icon="pen">
+    Existing records modified (shows before/after)
+  </Card>
+  <Card title="Deletes" icon="trash">
+    Records removed by the agent
+  </Card>
+</CardGroup>
+
+### How Diffs Are Captured
+
+Agent Diff uses PostgreSQL logical replication to capture every change:
+
+1. **WAL Capture**: All database writes are logged to the Write-Ahead Log
+2. **wal2json**: Converts WAL entries to JSON format
+3. **Change Journal**: Filtered and stored per environment/run
+4. **Diff Computation**: Aggregated into inserts/updates/deletes
+
+<Note>
+  This approach captures changes at the database level, so it works regardless of which API endpoint the agent used.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Evaluations" icon="check" href="/core-concepts/evaluations">
+    Verify your agent did the right thing
+  </Card>
+  <Card title="Assertions" icon="pen" href="/core-concepts/assertions">
+    Define expected outcomes with the DSL
+  </Card>
+</CardGroup>

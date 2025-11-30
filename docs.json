@@ -17,47 +17,41 @@
             "group": "Getting Started",
             "pages": [
               "introduction",
-              "quickstart",
-              "concepts"
+              "quickstart"
             ],
             "icon": "rocket"
           },
           {
-            "group": "Python SDK",
+            "group": "Core Concepts",
             "pages": [
-              "sdks/python/installation",
-              "sdks/python/basic-usage",
-              "sdks/python/openai-agents",
-              "sdks/python/langchain",
-              "sdks/python/smolagents"
-            ]
+              "core-concepts/environments",
+              "core-concepts/diffs",
+              "core-concepts/evaluations",
+              "core-concepts/assertions",
+              "test-suites/benchmarks",
+              "test-suites/creating-suites"
+            ],
+            "icon": "book"
           },
           {
-            "group": "TypeScript SDK",
+            "group": "Integrations",
             "pages": [
-              "sdks/typescript/installation",
-              "sdks/typescript/basic-usage",
-              "sdks/typescript/vercel-ai"
-            ]
+              "integrating-with-agents/openai-agents",
+              "integrating-with-agents/langchain",
+              "integrating-with-agents/smolagents",
+              "integrating-with-agents/vercel-ai"
+            ],
+            "icon": "robot"
           },
           {
             "group": "Code Executors",
             "pages": [
-              "executors/how-it-works",
-              "executors/python",
-              "executors/typescript",
-              "executors/bash"
-            ]
-          },
-          {
-            "group": "Evaluations",
-            "pages": [
-              "evaluations/overview",
-              "evaluations/test-suites",
-              "evaluations/writing-assertions",
-              "evaluations/dsl-reference",
-              "evaluations/benchmarks"
-            ]
+              "integrating-with-agents/how-it-works",
+              "code-executor-proxy/python",
+              "code-executor-proxy/typescript",
+              "code-executor-proxy/bash"
+            ],
+            "icon": "code"
           },
           {
             "group": "Self-Hosting",
@@ -65,7 +59,33 @@
               "hosting/docker-setup",
               "hosting/configuration",
               "hosting/neon-setup"
-            ]
+            ],
+            "icon": "server"
+          }
+        ]
+      },
+      {
+        "tab": "SDKs",
+        "groups": [
+          {
+            "group": "Python",
+            "pages": [
+              "sdks/python/installation",
+              "sdks/python/basic-usage",
+              "integrating-with-agents/openai-agents",
+              "integrating-with-agents/langchain",
+              "integrating-with-agents/smolagents"
+            ],
+            "icon": "python"
+          },
+          {
+            "group": "TypeScript",
+            "pages": [
+              "sdks/typescript/installation",
+              "sdks/typescript/basic-usage",
+              "integrating-with-agents/vercel-ai"
+            ],
+            "icon": "js"
           }
         ]
       },
@@ -82,7 +102,6 @@
             "group": "Slack",
             "pages": [
               "services/slack/overview",
-              "services/slack/methods",
               "services/slack/seeds"
             ]
           },
@@ -90,7 +109,6 @@
             "group": "Linear",
             "pages": [
               "services/linear/overview",
-              "services/linear/queries",
               "services/linear/seeds"
             ]
           }
@@ -143,9 +161,9 @@
           "icon": "github"
         },
         {
-          "anchor": "Discord",
-          "href": "https://discord.gg/agentdiff",
-          "icon": "discord"
+          "anchor": "Platform",
+          "href": "https://agentdiff.dev",
+          "icon": "browser"
         }
       ]
     }
@@ -172,9 +190,20 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/agentdiff",
-      "github": "https://github.com/hubertpysklo/agent-diff",
-      "discord": "https://discord.gg/agentdiff"
-    }
+      "x": "https://x.com/illiqid",
+      "github": "https://github.com/hubertpysklo/agent-diff"
+    },
+    "links": [
+      {
+        "header": "Contact",
+        "items": [
+          {
+            "label": "Email",
+            "href": "mailto:hubert@uni.minerva.edu"
+          }
+        ]
+      }
+    ],
+    "copyright": "© 2025 Hubert Pysklo"
   }
 }

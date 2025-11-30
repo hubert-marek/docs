@@ -138,117 +138,6 @@ print(f"Total time: {total_time:.1f}s")
 print(f"Avg time per test: {total_time/len(results):.1f}s")
 ```
 
-## Comparing Models
-
-```python
-async def compare_models(suite_name: str, models: list[str]):
-    """Compare multiple models on the same benchmark."""
-    
-    all_results = {}
-    
-    for model in models:
-        print(f"\n{'='*50}")
-        print(f"Testing model: {model}")
-        print(f"{'='*50}")
-        
-        results = await run_benchmark(suite_name, model=model)
-        all_results[model] = results
-    
-    # Summary table
-    print(f"\n{'='*60}")
-    print(f"MODEL COMPARISON: {suite_name}")
-    print(f"{'='*60}")
-    print(f"{'Model':<25} {'Pass Rate':<12} {'Avg Time':<12}")
-    print(f"{'-'*60}")
-    
-    for model, results in all_results.items():
-        passed = sum(1 for r in results if r["passed"])
-        pass_rate = passed / len(results)
-        avg_time = sum(r["elapsed_seconds"] for r in results) / len(results)
-        
-        print(f"{model:<25} {pass_rate:>10.0%} {avg_time:>10.1f}s")
-    
-    return all_results
-
-# Compare models
-asyncio.run(compare_models("Linear Bench", [
-    "gpt-4o",
-    "gpt-4o-mini",
-    "claude-3-5-sonnet",
-    "claude-3-haiku"
-]))
-```
-
-## Saving Results
-
-```python
-import json
-from datetime import datetime
-
-# Save to JSON
-results = asyncio.run(run_benchmark("Slack Bench"))
-
-output = {
-    "benchmark": "Slack Bench",
-    "model": "gpt-4o",
-    "timestamp": datetime.now().isoformat(),
-    "summary": {
-        "total": len(results),
-        "passed": sum(1 for r in results if r["passed"]),
-        "pass_rate": sum(1 for r in results if r["passed"]) / len(results)
-    },
-    "results": results
-}
-
-with open("benchmark_results.json", "w") as f:
-    json.dump(output, f, indent=2)
-
-print(f"Results saved to benchmark_results.json")
-```
-
-## Parallel Execution
-
-For faster benchmarks, run tests in parallel:
-
-```python
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
-
-async def run_test(test, client, model):
-    """Run a single test."""
-    env = client.init_env(testId=test.id)
-    run = client.start_run(envId=env.environmentId, testId=test.id)
-    
-    try:
-        executor = PythonExecutorProxy(env.environmentId, client.base_url)
-        agent = Agent(
-            model=model,
-            tools=[create_openai_tool(executor)],
-            instructions="..."
-        )
-        await Runner.run(agent, test.prompt)
-        result = client.evaluate_run(runId=run.runId)
-        return {"test": test.name, "passed": result.passed}
-    finally:
-        client.delete_env(envId=env.environmentId)
-
-async def run_parallel_benchmark(suite_name: str, concurrency: int = 5):
-    """Run benchmark with parallel test execution."""
-    
-    suites = client.list_test_suites(name=suite_name)
-    suite = client.get_test_suite(suites.testSuites[0].id, expand=True)
-    
-    semaphore = asyncio.Semaphore(concurrency)
-    
-    async def run_with_semaphore(test):
-        async with semaphore:
-            return await run_test(test, client, "gpt-4o")
-    
-    tasks = [run_with_semaphore(test) for test in suite.tests]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    
-    return results
-```
 
 ## HuggingFace Dataset
 
@@ -279,12 +168,10 @@ The dataset includes:
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Services Overview" icon="plug" href="/services/overview">
-    Explore supported APIs
+  <Card title="Creating Test Suites" icon="folder" href="/test-suites/creating-suites">
+    Create your own test suites
   </Card>
-  <Card title="Self-Hosting" icon="server" href="/hosting/docker-setup">
-    Deploy your own instance
-
-    ![Pass Rates Annotated Png+ Existing In Indexed Db Mintlif](/pass_rates_annotated.png+_existingInIndexedDbMintlify)
+  <Card title="Integrate with Agents" icon="robot" href="/integrating-with-agents/openai-agents">
+    Connect your AI agent framework
   </Card>
 </CardGroup>

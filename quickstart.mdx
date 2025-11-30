@@ -54,6 +54,10 @@ pnpm add agent-diff
 
 ## Step 3: Create Your First Environment
 
+<Tip>
+  **Where do these values come from?** The `templateName` and `impersonateUserId` must match data in the template. See [Environments & Templates](/core-concepts/environments) for available templates and user IDs (e.g., `U01AGENBOT9` is the agent bot user in `slack_default`).
+</Tip>
+
 <CodeGroup>
 
 ```python Python (Hosted)
@@ -240,16 +244,16 @@ await client.deleteEnv(env.environmentId);
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Core Concepts" icon="book" href="/concepts">
-    Understand environments, templates, seeds, and diffs in depth
+  <Card title="Example Benchmarks" icon="chart-line" href="/test-suites/benchmarks">
+    See built-in evaluation suites for Slack and Linear
   </Card>
-  <Card title="Run Evaluations" icon="check" href="/evaluations/overview">
+  <Card title="Environments" icon="server" href="/core-concepts/environments">
+    Understand environments and templates in depth
+  </Card>
+  <Card title="Run Evaluations" icon="check" href="/core-concepts/diffs">
     Add assertions and run benchmarks against your agent
   </Card>
-  <Card title="Code Executors" icon="code" href="/executors/how-it-works">
-    Learn how API interception works under the hood
-  </Card>
-  <Card title="Explore Services" icon="plug" href="/services/overview">
-    See all supported APIs and their methods
+  <Card title="Integrate with Agents" icon="robot" href="/integrating-with-agents/how-it-works">
+    Connect your AI agent framework
   </Card>
 </CardGroup>
