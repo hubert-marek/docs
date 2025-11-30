@@ -158,7 +158,7 @@
     "primary": {
       "type": "button",
       "label": "Get Started",
-      "page": "quickstart"
+      "href": "https://agentdiff.mintlify.app/quickstart"
     }
   },
   "contextual": {
