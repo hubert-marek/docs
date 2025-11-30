@@ -3,6 +3,21 @@ title: "Core Concepts"
 description: "Understanding environments, templates, seeds, runs, and diffs"
 ---
 
+<CardGroup cols={2}>
+  <Card title="Templates" icon="slack" href="/services/slack/overview">
+    Templates are pre-configured database schemas that serve as starting points for test environments. Think of them as **snapshots of a service's state** that your agent will interact with.
+  </Card>
+  <Card title="Enviroments" icon="square-kanban" href="/services/linear/overview">
+    Environments are isolated, ephemeral copies of templates where your agents operate. \*\*Each environment gets its own base API URL \*\*that you can proxy to your agents.
+  </Card>
+  <Card title="Test Runs & Diffs" icon="square-kanban" href="/services/linear/overview">
+    A run represents a single test session within an environment. Starting a run takes a snapshot, and ending it takes another one and returns a diff - computed difference between the before and after states of an environment.
+  </Card>
+  <Card title="Evaluations" icon="square-kanban" href="/services/linear/overview">
+    Evaluations let you verify that your AI agent performed the expected actions. Instead of checking if the agent "said the right thing", you check if it did the right thing by examining database state changes.
+  </Card>
+</CardGroup>
+
 ## Overview
 
 Agent Diff uses a few key abstractions to enable deterministic agent testing:
@@ -53,12 +68,12 @@ Templates are pre-configured database schemas that serve as starting points for 
 
 ### Built-in Templates
 
-| Template | Service | Description |
-|----------|---------|-------------|
-| `slack_default` | Slack | 3 users, 2 channels, 3 messages |
-| `slack_bench_default` | Slack | Extended seed for benchmarks |
-| `linear_default` | Linear | Basic teams, users, issues |
-| `linear_expanded` | Linear | Full seed with projects, cycles, workflows |
+| Template              | Service | Description                                |
+| --------------------- | ------- | ------------------------------------------ |
+| `slack_default`       | Slack   | 3 users, 2 channels, 3 messages            |
+| `slack_bench_default` | Slack   | Extended seed for benchmarks               |
+| `linear_default`      | Linear  | Basic teams, users, issues                 |
+| `linear_expanded`     | Linear  | Full seed with projects, cycles, workflows |
 
 ### Exploring Template Contents
 
@@ -67,13 +82,14 @@ To see exactly what data is inside a template, check the seed files in the repo:
 <Tabs>
   <Tab title="Slack Templates">
     **Location**: `examples/slack/seeds/`
-    
-    | File | Template | Contents |
-    |------|----------|----------|
-    | `slack_default.json` | slack_default | 3 users, 2 channels (#general, #random), 3 messages |
-    | `slack_bench_default.json` | slack_bench_default | Extended with threads, reactions, DMs |
-    
+
+    | File                       | Template            | Contents                                            |
+    | -------------------------- | ------------------- | --------------------------------------------------- |
+    | `slack_default.json`       | slack_default       | 3 users, 2 channels (#general, #random), 3 messages |
+    | `slack_bench_default.json` | slack_bench_default | Extended with threads, reactions, DMs               |
+
     **Key entities:**
+
     - `users` - User accounts with IDs like `U01AGENBOT9`
     - `channels` - Channels with IDs like `C01GENERAL99`
     - `channel_members` - Who belongs to which channel
@@ -82,13 +98,14 @@ To see exactly what data is inside a template, check the seed files in the repo:
   </Tab>
   <Tab title="Linear Templates">
     **Location**: `examples/linear/seeds/`
-    
-    | File | Template | Contents |
-    |------|----------|----------|
-    | `linear_default.json` | linear_default | 2 teams, 3 users, 5 issues |
+
+    | File                   | Template        | Contents                         |
+    | ---------------------- | --------------- | -------------------------------- |
+    | `linear_default.json`  | linear_default  | 2 teams, 3 users, 5 issues       |
     | `linear_expanded.json` | linear_expanded | Full workspace with 40+ entities |
-    
+
     **Key entities:**
+
     - `organizations` - Org with ID
     - `teams` - Engineering (ENG), Growth (GRO)
     - `users` - Team members
@@ -100,7 +117,7 @@ To see exactly what data is inside a template, check the seed files in the repo:
 </Tabs>
 
 <Tip>
-**View seed files on GitHub**: [slack seeds](https://github.com/hubertpysklo/agent-diff/tree/main/examples/slack/seeds) | [linear seeds](https://github.com/hubertpysklo/agent-diff/tree/main/examples/linear/seeds)
+  **View seed files on GitHub**: [slack seeds](https://github.com/hubertpysklo/agent-diff/tree/main/examples/slack/seeds) | [linear seeds](https://github.com/hubertpysklo/agent-diff/tree/main/examples/linear/seeds)
 </Tip>
 
 ### Using Templates
@@ -181,13 +198,13 @@ Environments are isolated, ephemeral copies of templates where your agents opera
 
 ### Key Properties
 
-| Property | Description |
-|----------|-------------|
-| `environmentId` | Unique identifier (UUID) |
-| `environmentUrl` | Base URL for API calls |
-| `schemaName` | PostgreSQL schema name |
-| `expiresAt` | Auto-cleanup time (based on TTL) |
-| `status` | `ready`, `expired`, `deleted` |
+| Property         | Description                      |
+| ---------------- | -------------------------------- |
+| `environmentId`  | Unique identifier (UUID)         |
+| `environmentUrl` | Base URL for API calls           |
+| `schemaName`     | PostgreSQL schema name           |
+| `expiresAt`      | Auto-cleanup time (based on TTL) |
+| `status`         | `ready`, `expired`, `deleted`    |
 
 ### Lifecycle
 
@@ -210,6 +227,7 @@ client.delete_env(envId=env.environmentId)
 ### Isolation
 
 Each environment has:
+
 - **Separate database schema**: No cross-contamination between tests
 - **Independent state**: Changes don't affect other environments or templates
 - **Own API endpoint**: Unique URL for routing agent requests
@@ -225,24 +243,24 @@ A run represents a single test session within an environment.
 <Steps>
   <Step title="Start Run">
     Takes a "before" snapshot of the environment state
+
     ```python
     run = client.start_run(envId=env.environmentId)
     ```
   </Step>
-  
   <Step title="Agent Execution">
     Your agent makes API calls that modify the environment
   </Step>
-  
   <Step title="Compute Diff">
     Compares before/after states to produce a diff
+
     ```python
     result = client.diff_run(runId=run.runId)
     ```
   </Step>
-  
   <Step title="Evaluate (Optional)">
     Check if the diff matches expected assertions
+
     ```python
     evaluation = client.evaluate_run(runId=run.runId)
     ```
@@ -251,12 +269,12 @@ A run represents a single test session within an environment.
 
 ### Run Properties
 
-| Property | Description |
-|----------|-------------|
-| `runId` | Unique identifier |
-| `status` | `running`, `completed`, `failed` |
+| Property         | Description                        |
+| ---------------- | ---------------------------------- |
+| `runId`          | Unique identifier                  |
+| `status`         | `running`, `completed`, `failed`   |
 | `beforeSnapshot` | Snapshot ID before agent execution |
-| `afterSnapshot` | Snapshot ID after agent execution |
+| `afterSnapshot`  | Snapshot ID after agent execution  |
 
 ---
 
@@ -312,7 +330,7 @@ Agent Diff uses PostgreSQL logical replication to capture every change:
 4. **Diff Computation**: Aggregated into inserts/updates/deletes
 
 <Note>
-This approach captures changes at the database level, so it works regardless of which API endpoint the agent used.
+  This approach captures changes at the database level, so it works regardless of which API endpoint the agent used.
 </Note>
 
 ---
@@ -364,6 +382,7 @@ Seeds are JSON files that define the initial data for a template.
 ### Seed Location
 
 Seeds are stored in the `examples/` directory:
+
 - `examples/slack/seeds/` - Slack seed files
 - `examples/linear/seeds/` - Linear seed files
 
@@ -416,4 +435,3 @@ client.delete_env(envId=env.environmentId)
     Add assertions and run benchmarks
   </Card>
 </CardGroup>
-
