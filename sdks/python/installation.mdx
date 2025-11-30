@@ -1,0 +1,127 @@
+---
+title: "Installation"
+description: "Install the Agent Diff Python SDK"
+---
+
+## Requirements
+
+- Python 3.10 or higher
+- Agent Diff backend running (locally or remote)
+
+## Installation
+
+<CodeGroup>
+```bash pip
+pip install agent-diff
+```
+
+```bash uv (recommended)
+uv add agent-diff
+```
+
+```bash poetry
+poetry add agent-diff
+```
+</CodeGroup>
+
+## Configuration
+
+### Self-Hosted (Local)
+
+```python
+from agent_diff import AgentDiff
+
+# Connects to http://localhost:8000 by default
+client = AgentDiff()
+```
+
+### Agent Diff Cloud (Hosted)
+
+For the hosted version at `api.agentdiff.dev`:
+
+```python
+client = AgentDiff(
+    base_url="https://api.agentdiff.dev",
+    api_key="ak_your_api_key_here"  # Get from dashboard
+)
+```
+
+<Note>
+Sign up at [agentdiff.dev](https://agentdiff.dev) to get your API key for the hosted version.
+</Note>
+
+### Custom Self-Hosted URL
+
+```python
+client = AgentDiff(base_url="https://your-agentdiff-server.com")
+```
+
+### With API Key (Self-Hosted)
+
+```python
+client = AgentDiff(
+    base_url="https://your-agentdiff-server.com",
+    api_key="ak_your_api_key_here"
+)
+```
+
+### Environment Variables
+
+You can also configure via environment variables:
+
+```bash
+# For hosted version
+export AGENT_DIFF_BASE_URL="https://api.agentdiff.dev"
+export AGENT_DIFF_API_KEY="ak_your_api_key"
+
+# For local development
+export AGENT_DIFF_BASE_URL="http://localhost:8000"
+```
+
+```python
+# SDK will automatically use environment variables
+client = AgentDiff()
+```
+
+### Configuration Priority
+
+The SDK resolves configuration in this order:
+1. Explicit parameters passed to `AgentDiff()`
+2. Environment variables (`AGENT_DIFF_BASE_URL`, `AGENT_DIFF_API_KEY`)
+3. Defaults (`http://localhost:8000`, no API key)
+
+## Verify Installation
+
+```python
+from agent_diff import AgentDiff
+
+client = AgentDiff()
+
+# List available templates
+templates = client.list_templates()
+print(f"Found {len(templates.templates)} templates")
+
+# Create a test environment
+env = client.init_env(
+    templateService="slack",
+    templateName="slack_default",
+    impersonateUserId="U01AGENBOT9"
+)
+print(f"Created environment: {env.environmentId}")
+
+# Clean up
+client.delete_env(envId=env.environmentId)
+print("✓ SDK working correctly!")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Basic Usage" icon="play" href="/sdks/python/basic-usage">
+    Learn the core SDK operations
+  </Card>
+  <Card title="OpenAI Agents" icon="robot" href="/sdks/python/openai-agents">
+    Integrate with OpenAI Agents SDK
+  </Card>
+</CardGroup>
+

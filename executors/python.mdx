@@ -1,0 +1,181 @@
+---
+title: "Python Executor"
+description: "Execute Python code with API interception"
+---
+
+## Overview
+
+The `PythonExecutorProxy` intercepts Python HTTP libraries (`requests`, `urllib`) and routes API calls to isolated environments.
+
+## Basic Usage
+
+```python
+from agent_diff import PythonExecutorProxy
+
+# Create executor for an environment
+executor = PythonExecutorProxy(
+    environment_id="env-123",
+    base_url="http://localhost:8000"  # Optional, defaults to localhost
+)
+
+# Execute code
+result = executor.execute("""
+import requests
+
+response = requests.post('https://slack.com/api/chat.postMessage', json={
+    'channel': 'C01GENERAL99',
+    'text': 'Hello from Python!'
+})
+print(response.json())
+""")
+
+print(result["stdout"])  # API response
+print(result["status"])  # "success" or "error"
+```
+
+## Creating Framework Tools
+
+### OpenAI Agents SDK
+
+```python
+from agent_diff import PythonExecutorProxy, create_openai_tool
+from agents import Agent
+
+executor = PythonExecutorProxy(env.environmentId, client.base_url)
+tool = create_openai_tool(executor)
+
+agent = Agent(
+    name="Assistant",
+    tools=[tool],
+    instructions="Use execute_python to interact with Slack API..."
+)
+```
+
+### LangChain
+
+```python
+from agent_diff import PythonExecutorProxy, create_langchain_tool
+
+executor = PythonExecutorProxy(env.environmentId, client.base_url)
+tool = create_langchain_tool(executor)
+
+# Use with LangChain agent
+```
+
+### smolagents
+
+```python
+from agent_diff import PythonExecutorProxy, create_smolagents_tool
+
+executor = PythonExecutorProxy(env.environmentId, client.base_url)
+tool = create_smolagents_tool(executor)
+
+# Use with smolagents CodeAgent
+```
+
+## Supported Libraries
+
+The Python executor intercepts:
+
+- **requests**: All HTTP methods
+- **urllib.request**: urlopen, Request
+- **httpx**: (Coming soon)
+- **aiohttp**: (Coming soon)
+
+## Execution Result
+
+```python
+result = executor.execute(code)
+
+# Result structure:
+{
+    "status": "success" | "error",
+    "stdout": "...",     # Captured print() output
+    "stderr": "...",     # Error output if any
+    "exit_code": 0       # Process exit code
+}
+```
+
+## Error Handling
+
+```python
+result = executor.execute(code)
+
+if result["status"] == "error":
+    print(f"Execution failed: {result['stderr']}")
+else:
+    print(f"Output: {result['stdout']}")
+```
+
+## Example: Slack API Calls
+
+```python
+result = executor.execute("""
+import requests
+import json
+
+# List channels
+channels = requests.get('https://slack.com/api/conversations.list').json()
+print("Channels:", [c['name'] for c in channels['channels']])
+
+# Post message
+response = requests.post('https://slack.com/api/chat.postMessage', json={
+    'channel': 'C01GENERAL99',
+    'text': 'Hello!'
+}).json()
+
+print("Message sent:", response['ok'])
+print("Timestamp:", response['ts'])
+""")
+```
+
+## Example: Linear GraphQL
+
+```python
+result = executor.execute("""
+import requests
+
+query = '''
+mutation {
+  issueCreate(input: {
+    title: "Fix bug"
+    teamId: "team-123"
+  }) {
+    success
+    issue {
+      id
+      title
+    }
+  }
+}
+'''
+
+response = requests.post('https://api.linear.app/graphql', json={
+    'query': query
+})
+
+print(response.json())
+""")
+```
+
+## Configuration Options
+
+```python
+executor = PythonExecutorProxy(
+    environment_id="env-123",
+    base_url="http://localhost:8000",
+    token="optional-auth-token"  # Passed as X-API-Key header
+)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="TypeScript Executor" icon="js" href="/executors/typescript">
+    Execute TypeScript/JavaScript code
+  </Card>
+  <Card title="Bash Executor" icon="terminal" href="/executors/bash">
+    Execute shell commands
+  </Card>
+</CardGroup>
+

@@ -1,0 +1,122 @@
+---
+title: "Initialize Environment"
+api: "POST /api/platform/initEnv"
+description: "Create an isolated test environment"
+---
+
+## Request
+
+```bash
+POST /api/platform/initEnv
+```
+
+### Body Parameters
+
+<ParamField body="templateService" type="string" required>
+  Service type: `"slack"` or `"linear"`
+</ParamField>
+
+<ParamField body="templateName" type="string">
+  Template to clone from (e.g., `"slack_default"`, `"linear_expanded"`). 
+  Required if `testId` is not provided.
+</ParamField>
+
+<ParamField body="testId" type="string">
+  Test ID to get template configuration from. If provided, `templateService` and `templateName` are inferred.
+</ParamField>
+
+<ParamField body="impersonateUserId" type="string">
+  User ID the agent will act as. Required if `testId` is not provided.
+</ParamField>
+
+<ParamField body="impersonateEmail" type="string">
+  Email of the user to impersonate. Alternative to `impersonateUserId`.
+</ParamField>
+
+<ParamField body="ttlSeconds" type="number" default="1800">
+  Time-to-live in seconds. Environment auto-deletes after this time.
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://api.agentdiff.dev/api/platform/initEnv \
+  -H "X-API-Key: ak_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "templateService": "slack",
+    "templateName": "slack_default",
+    "impersonateUserId": "U01AGENBOT9",
+    "ttlSeconds": 3600
+  }'
+```
+
+## Response
+
+<ResponseField name="environmentId" type="string">
+  Unique environment identifier
+</ResponseField>
+
+<ResponseField name="environmentUrl" type="string">
+  Base URL for service API calls
+</ResponseField>
+
+<ResponseField name="schemaName" type="string">
+  PostgreSQL schema name for this environment
+</ResponseField>
+
+<ResponseField name="expiresAt" type="string">
+  ISO 8601 timestamp when environment will auto-delete
+</ResponseField>
+
+<ResponseField name="templateSchema" type="string">
+  Template that was cloned
+</ResponseField>
+
+<ResponseField name="service" type="string">
+  Service type (`slack` or `linear`)
+</ResponseField>
+
+### Example Response
+
+```json
+{
+  "environmentId": "abc123def456",
+  "environmentUrl": "/api/env/abc123def456/services/slack",
+  "schemaName": "state_pool_abc123",
+  "expiresAt": "2025-11-26T16:00:00Z",
+  "templateSchema": "slack_default",
+  "service": "slack"
+}
+```
+
+## Errors
+
+| Error | Status | Description |
+|-------|--------|-------------|
+| `template_not_found` | 404 | Template doesn't exist |
+| `missing_impersonate` | 400 | `impersonateUserId` or `impersonateEmail` required |
+| `invalid_service` | 400 | Unknown service type |
+
+## SDK Usage
+
+<CodeGroup>
+```python Python
+env = client.init_env(
+    templateService="slack",
+    templateName="slack_default",
+    impersonateUserId="U01AGENBOT9",
+    ttlSeconds=3600
+)
+```
+
+```typescript TypeScript
+const env = await client.initEnv({
+  templateService: 'slack',
+  templateName: 'slack_default',
+  impersonateUserId: 'U01AGENBOT9',
+  ttlSeconds: 3600
+});
+```
+</CodeGroup>
+

@@ -1,0 +1,201 @@
+---
+title: "Docker Setup"
+description: "Run Agent Diff locally with Docker"
+---
+
+## Quick Start
+
+The simplest way to run Agent Diff:
+
+```bash
+git clone https://github.com/hubertpysklo/agent-diff.git
+cd agent-diff/ops
+docker-compose up
+```
+
+<Check>
+Backend running at `http://localhost:8000`
+</Check>
+
+This starts:
+- PostgreSQL database (with logical replication enabled)
+- Agent Diff backend
+- Auto-seeded templates (Slack, Linear)
+
+## Makefile Commands
+
+```bash
+cd ops
+
+# Start services (local PostgreSQL)
+make up
+
+# Stop services
+make down
+
+# View logs
+make logs
+
+# Run tests
+make test
+
+# Run seed scripts
+make seed
+
+# Create a new Alembic migration
+make create-migration MESSAGE="add column"
+```
+
+## Using External Database (Neon)
+
+If you want to use an external PostgreSQL like Neon:
+
+```bash
+# Create .env file
+echo 'DATABASE_URL=postgresql://user:pass@host/db' > .env
+
+# Start with external profile
+make up-external
+```
+
+Or with docker-compose directly:
+
+```bash
+DATABASE_URL=postgresql://user:pass@host/db \
+  docker-compose --profile external up -d backend-external
+```
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_URL` | Local postgres | PostgreSQL connection string |
+| `LOGICAL_REPLICATION_ENABLED` | `true` | Enable diff capture via WAL |
+| `SEED` | `true` (local), `false` (external) | Run seed scripts on startup |
+| `ENVIRONMENT` | `development` | Environment name |
+
+### Optional Performance Tuning
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MAINTENANCE_IDLE_TIMEOUT` | `300` | Seconds before pool refill stops |
+| `MAINTENANCE_CYCLE_INTERVAL` | `10` | Seconds between maintenance cycles |
+| `POOL_REFILL_CONCURRENCY` | `10` | Parallel schema builds |
+| `REPLICATION_IDLE_TIMEOUT` | `300` | Seconds before replication stops |
+
+## Docker Compose Structure
+
+```yaml
+services:
+  postgres:
+    image: postgres:16-alpine
+    command: >
+      postgres -c wal_level=logical 
+               -c max_replication_slots=10 
+               -c max_wal_senders=10
+    # Required for logical replication (diff capture)
+
+  backend:
+    build: ../backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../backend:/app      # Live code reload
+      - ../examples:/examples # Seed data
+      - ../sdk:/sdk          # SDK access
+```
+
+## Volumes
+
+The Docker setup uses a named volume for PostgreSQL data:
+
+```yaml
+volumes:
+  postgres_data:
+```
+
+To reset the database:
+
+```bash
+docker-compose down -v
+docker-compose up
+```
+
+## Health Check
+
+```bash
+curl http://localhost:8000/api/platform/health
+```
+
+```json
+{
+  "status": "healthy",
+  "service": "agent-diff"
+}
+```
+
+## Logs
+
+View backend logs:
+
+```bash
+# All logs
+docker-compose logs -f
+
+# Backend only
+docker-compose logs -f backend
+
+# PostgreSQL only
+docker-compose logs -f postgres
+```
+
+## Common Issues
+
+### Port Already in Use
+
+```bash
+# Check what's using port 8000
+lsof -i :8000
+
+# Use a different port
+PORT=8001 docker-compose up
+```
+
+### Database Connection Errors
+
+```bash
+# Reset the database
+docker-compose down -v
+docker-compose up
+```
+
+### Seed Data Not Loading
+
+```bash
+# Force re-seed
+SEED=true docker-compose up --force-recreate backend
+```
+
+## Development Mode
+
+For development with live reload:
+
+```bash
+# The default docker-compose.yml mounts your local code
+docker-compose up
+
+# Changes to backend/ are reflected immediately
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/hosting/configuration">
+    Advanced configuration options
+  </Card>
+  <Card title="Neon Setup" icon="database" href="/hosting/neon-setup">
+    Use serverless PostgreSQL
+  </Card>
+</CardGroup>
+

@@ -1,11 +1,11 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "theme": "maple",
+  "name": "Agent Diff",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#6366F1",
+    "light": "#818CF8",
+    "dark": "#4F46E5"
   },
   "favicon": "/favicon.svg",
   "navigation": {
@@ -14,55 +14,122 @@
         "tab": "Guides",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Getting Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "concepts"
+            ],
+            "icon": "rocket"
+          },
+          {
+            "group": "Python SDK",
+            "pages": [
+              "sdks/python/installation",
+              "sdks/python/basic-usage",
+              "sdks/python/openai-agents",
+              "sdks/python/langchain",
+              "sdks/python/smolagents"
             ]
           },
           {
-            "group": "Customization",
+            "group": "TypeScript SDK",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "sdks/typescript/installation",
+              "sdks/typescript/basic-usage",
+              "sdks/typescript/vercel-ai"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Code Executors",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "executors/how-it-works",
+              "executors/python",
+              "executors/typescript",
+              "executors/bash"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Evaluations",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "evaluations/overview",
+              "evaluations/test-suites",
+              "evaluations/writing-assertions",
+              "evaluations/dsl-reference",
+              "evaluations/benchmarks"
+            ]
+          },
+          {
+            "group": "Self-Hosting",
+            "pages": [
+              "hosting/docker-setup",
+              "hosting/configuration",
+              "hosting/neon-setup"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Services",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Supported APIs",
             "pages": [
-              "api-reference/introduction"
+              "services/overview"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Slack",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "services/slack/overview",
+              "services/slack/methods",
+              "services/slack/seeds"
+            ]
+          },
+          {
+            "group": "Linear",
+            "pages": [
+              "services/linear/overview",
+              "services/linear/queries",
+              "services/linear/seeds"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "REST API",
+            "pages": [
+              "api-reference/introduction",
+              "api-reference/authentication"
+            ]
+          },
+          {
+            "group": "Platform Endpoints",
+            "pages": [
+              "api-reference/platform/init-env",
+              "api-reference/platform/start-run",
+              "api-reference/platform/evaluate-run",
+              "api-reference/platform/diff-run",
+              "api-reference/platform/get-results",
+              "api-reference/platform/delete-env"
+            ]
+          },
+          {
+            "group": "Template Endpoints",
+            "pages": [
+              "api-reference/templates/list-templates",
+              "api-reference/templates/create-template"
+            ]
+          },
+          {
+            "group": "Test Suite Endpoints",
+            "pages": [
+              "api-reference/test-suites/list-suites",
+              "api-reference/test-suites/get-suite",
+              "api-reference/test-suites/create-suite"
             ]
           }
         ]
@@ -71,14 +138,14 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "GitHub",
+          "href": "https://github.com/hubertpysklo/agent-diff",
+          "icon": "github"
         },
         {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "Discord",
+          "href": "https://discord.gg/agentdiff",
+          "icon": "discord"
         }
       ]
     }
@@ -90,33 +157,30 @@
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "label": "GitHub",
+        "href": "https://github.com/hubertpysklo/agent-diff"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "Get Started",
+      "href": "/quickstart"
     }
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "cursor"
+    ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "x": "https://x.com/agentdiff",
+      "github": "https://github.com/hubertpysklo/agent-diff",
+      "discord": "https://discord.gg/agentdiff"
     }
   }
 }

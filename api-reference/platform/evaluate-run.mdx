@@ -1,0 +1,129 @@
+---
+title: "Evaluate Run"
+api: "POST /api/platform/evaluateRun"
+description: "Complete a run and evaluate against test assertions"
+---
+
+## Request
+
+```bash
+POST /api/platform/evaluateRun
+```
+
+### Body Parameters
+
+<ParamField body="runId" type="string" required>
+  Run ID from `startRun`
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://api.agentdiff.dev/api/platform/evaluateRun \
+  -H "X-API-Key: ak_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "runId": "run-xyz789"
+  }'
+```
+
+## Response
+
+<ResponseField name="runId" type="string">
+  Run identifier
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Final status: `"passed"` or `"failed"`
+</ResponseField>
+
+<ResponseField name="passed" type="boolean">
+  Whether all assertions passed
+</ResponseField>
+
+<ResponseField name="score" type="object">
+  Score details
+</ResponseField>
+
+<ResponseField name="failures" type="array">
+  List of failed assertions with details
+</ResponseField>
+
+### Example Response (Passed)
+
+```json
+{
+  "runId": "run-xyz789",
+  "status": "passed",
+  "passed": true,
+  "score": {
+    "passed": 2,
+    "total": 2,
+    "percent": 100.0
+  },
+  "failures": []
+}
+```
+
+### Example Response (Failed)
+
+```json
+{
+  "runId": "run-xyz789",
+  "status": "failed",
+  "passed": false,
+  "score": {
+    "passed": 1,
+    "total": 2,
+    "percent": 50.0
+  },
+  "failures": [
+    "assertion#2 messages expected count 1 but got 0"
+  ]
+}
+```
+
+## What Happens
+
+1. **After snapshot**: Current database state is captured
+2. **Diff computed**: Before/after states compared
+3. **Assertions evaluated**: Test assertions checked against diff
+4. **Results stored**: Results saved for later retrieval
+5. **Replication stopped**: WAL capture ends
+
+<Note>
+Use this when you have a test with assertions. For just getting the diff without assertions, use `diffRun` instead.
+</Note>
+
+## Errors
+
+| Error | Status | Description |
+|-------|--------|-------------|
+| `run_not_found` | 404 | Run doesn't exist |
+| `run_already_completed` | 400 | Run already evaluated |
+| `no_test_defined` | 400 | No test associated with this run |
+
+## SDK Usage
+
+<CodeGroup>
+```python Python
+result = client.evaluate_run(runId=run.runId)
+
+print(f"Passed: {result.passed}")
+print(f"Score: {result.score['percent']}%")
+if result.failures:
+    for f in result.failures:
+        print(f"  Failed: {f}")
+```
+
+```typescript TypeScript
+const result = await client.evaluateRun({ runId: run.runId });
+
+console.log(`Passed: ${result.passed}`);
+console.log(`Score: ${result.score.percent}%`);
+if (result.failures) {
+  result.failures.forEach(f => console.log(`  Failed: ${f}`));
+}
+```
+</CodeGroup>
+

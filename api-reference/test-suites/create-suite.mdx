@@ -1,0 +1,177 @@
+---
+title: "Create Test Suite"
+api: "POST /api/platform/testSuites"
+description: "Create a new test suite with tests"
+---
+
+## Request
+
+```bash
+POST /api/platform/testSuites
+```
+
+### Body Parameters
+
+<ParamField body="name" type="string" required>
+  Suite name
+</ParamField>
+
+<ParamField body="description" type="string">
+  Suite description
+</ParamField>
+
+<ParamField body="templateService" type="string" required>
+  Service type: `"slack"` or `"linear"`
+</ParamField>
+
+<ParamField body="templateName" type="string" required>
+  Template to use for tests
+</ParamField>
+
+<ParamField body="impersonateUserId" type="string">
+  Default user ID for tests
+</ParamField>
+
+<ParamField body="visibility" type="string" default="private">
+  `"public"` or `"private"`
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://api.agentdiff.dev/api/platform/testSuites \
+  -H "X-API-Key: ak_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Agent Tests",
+    "description": "Custom tests for my Slack agent",
+    "templateService": "slack",
+    "templateName": "slack_default",
+    "impersonateUserId": "U01AGENBOT9",
+    "visibility": "private"
+  }'
+```
+
+## Response
+
+<ResponseField name="suiteId" type="string">
+  New suite identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Suite name
+</ResponseField>
+
+### Example Response
+
+```json
+{
+  "suiteId": "suite-789",
+  "name": "My Agent Tests"
+}
+```
+
+## Adding Tests
+
+After creating a suite, add tests:
+
+```bash
+curl -X POST https://api.agentdiff.dev/api/platform/testSuites/suite-789/tests \
+  -H "X-API-Key: ak_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tests": [
+      {
+        "name": "Post welcome message",
+        "prompt": "Post a welcome message to #general",
+        "expectedOutput": {
+          "assertions": [{
+            "diff_type": "added",
+            "entity": "messages",
+            "where": {
+              "channel_id": {"eq": "C01GENERAL99"},
+              "message_text": {"contains": "welcome"}
+            },
+            "expected_count": 1
+          }]
+        }
+      }
+    ]
+  }'
+```
+
+## Complete Example
+
+```python
+from agent_diff import AgentDiff
+
+client = AgentDiff()
+
+# 1. Create suite
+suite = client.create_test_suite({
+    "name": "My Slack Tests",
+    "description": "Custom Slack agent tests",
+    "templateService": "slack",
+    "templateName": "slack_default",
+    "impersonateUserId": "U01AGENBOT9"
+})
+
+# 2. Add tests
+client.create_tests(suite.suiteId, {
+    "tests": [
+        {
+            "name": "Post message",
+            "prompt": "Post 'Hello' to #general",
+            "expectedOutput": {
+                "assertions": [{
+                    "diff_type": "added",
+                    "entity": "messages",
+                    "where": {"message_text": {"contains": "Hello"}},
+                    "expected_count": 1
+                }]
+            }
+        },
+        {
+            "name": "Create channel",
+            "prompt": "Create a new channel called 'test-channel'",
+            "expectedOutput": {
+                "assertions": [{
+                    "diff_type": "added",
+                    "entity": "channels",
+                    "where": {"name": {"eq": "test-channel"}},
+                    "expected_count": 1
+                }]
+            }
+        }
+    ]
+})
+
+# 3. Use the suite
+suite = client.get_test_suite(suite.suiteId, expand=True)
+print(f"Created suite with {len(suite.tests)} tests")
+```
+
+## SDK Usage
+
+<CodeGroup>
+```python Python
+suite = client.create_test_suite({
+    "name": "My Tests",
+    "templateService": "slack",
+    "templateName": "slack_default",
+    "impersonateUserId": "U01AGENBOT9"
+})
+print(f"Created suite: {suite.suiteId}")
+```
+
+```typescript TypeScript
+const suite = await client.createTestSuite({
+  name: 'My Tests',
+  templateService: 'slack',
+  templateName: 'slack_default',
+  impersonateUserId: 'U01AGENBOT9'
+});
+console.log(`Created suite: ${suite.suiteId}`);
+```
+</CodeGroup>
+

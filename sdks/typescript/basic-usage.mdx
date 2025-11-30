@@ -1,0 +1,255 @@
+---
+title: "Basic Usage"
+description: "Core operations with the TypeScript SDK"
+---
+
+## Environment Management
+
+### Create Environment
+
+```typescript
+import { AgentDiff } from 'agent-diff';
+
+const client = new AgentDiff();
+
+const env = await client.initEnv({
+  templateService: 'slack',       // Service type: "slack" or "linear"
+  templateName: 'slack_default',  // Template to clone from
+  impersonateUserId: 'U01AGENBOT9',  // User ID agent will act as
+  ttlSeconds: 3600  // Auto-cleanup after 1 hour (default: 1800)
+});
+
+console.log(`Environment ID: ${env.environmentId}`);
+console.log(`API URL: ${env.environmentUrl}`);
+console.log(`Schema: ${env.schemaName}`);
+console.log(`Expires: ${env.expiresAt}`);
+```
+
+### Delete Environment
+
+```typescript
+await client.deleteEnv(env.environmentId);
+```
+
+<Warning>
+Always delete environments when done to free up resources. Environments auto-expire after TTL, but explicit cleanup is faster.
+</Warning>
+
+---
+
+## Run Management
+
+### Start Run
+
+```typescript
+// Start a run (takes "before" snapshot)
+const run = await client.startRun({ envId: env.environmentId });
+
+console.log(`Run ID: ${run.runId}`);
+console.log(`Status: ${run.status}`);  // "running"
+```
+
+### Get Diff
+
+After your agent has made changes:
+
+```typescript
+// Compute diff between before and after states
+const diff = await client.diffRun({ runId: run.runId });
+
+console.log('New records:', diff.diff.inserts);
+console.log('Modified records:', diff.diff.updates);
+console.log('Deleted records:', diff.diff.deletes);
+```
+
+### Evaluate Run
+
+If you have a test with assertions:
+
+```typescript
+// Run assertions against the diff
+const result = await client.evaluateRun({ runId: run.runId });
+
+console.log(`Passed: ${result.passed}`);
+console.log(`Score: ${result.score}`);
+```
+
+### Get Results
+
+```typescript
+const results = await client.getResultsForRun(run.runId);
+
+console.log(`Status: ${results.status}`);
+console.log(`Failures: ${results.failures}`);
+console.log(`Diff: ${results.diff}`);
+```
+
+---
+
+## Using Code Executors
+
+### TypeScript Executor
+
+```typescript
+import { TypeScriptExecutorProxy } from 'agent-diff';
+
+const executor = new TypeScriptExecutorProxy(
+  env.environmentId,
+  client.getBaseUrl()
+);
+
+// Execute code that makes API calls
+const result = await executor.execute(`
+  const response = await fetch('https://slack.com/api/conversations.list', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  const data = await response.json();
+  console.log('Channels:', data.channels.map(c => c.name));
+`);
+
+console.log(result.stdout);
+```
+
+### Bash Executor
+
+```typescript
+import { BashExecutorProxy } from 'agent-diff';
+
+const executor = new BashExecutorProxy(
+  env.environmentId,
+  client.getBaseUrl()
+);
+
+const result = await executor.execute(`
+  curl -X POST https://slack.com/api/chat.postMessage \\
+    -H "Content-Type: application/json" \\
+    -d '{"channel": "C01GENERAL99", "text": "Hello!"}'
+`);
+
+console.log(result.stdout);
+```
+
+---
+
+## Template Management
+
+### List Templates
+
+```typescript
+const templates = await client.listTemplates();
+
+for (const t of templates.templates) {
+  console.log(`- ${t.name} (${t.service})`);
+  console.log(`  Description: ${t.description}`);
+}
+```
+
+### Create Custom Template
+
+```typescript
+// First, create and customize an environment
+const env = await client.initEnv({
+  templateService: 'slack',
+  templateName: 'slack_default'
+});
+
+// Make customizations via API...
+
+// Save as new template
+const custom = await client.createTemplateFromEnvironment({
+  environmentId: env.environmentId,
+  service: 'slack',
+  name: 'my_custom_template',
+  description: 'Customized workspace',
+  visibility: 'private'
+});
+
+console.log(`Created template: ${custom.templateId}`);
+```
+
+---
+
+## Test Suite Management
+
+### List Test Suites
+
+```typescript
+const suites = await client.listTestSuites();
+
+for (const suite of suites.testSuites) {
+  console.log(`- ${suite.name} (ID: ${suite.id})`);
+}
+```
+
+### Get Test Suite with Tests
+
+```typescript
+const suite = await client.getTestSuite(suiteId, { expand: true });
+
+console.log(`Suite: ${suite.name}`);
+for (const test of suite.tests) {
+  console.log(`  - ${test.name}: ${test.prompt}`);
+}
+```
+
+---
+
+## Complete Example
+
+```typescript
+import { AgentDiff, TypeScriptExecutorProxy } from 'agent-diff';
+
+const client = new AgentDiff();
+
+// 1. Create environment
+const env = await client.initEnv({
+  templateService: 'slack',
+  templateName: 'slack_default',
+  impersonateUserId: 'U01AGENBOT9'
+});
+
+// 2. Start run
+const run = await client.startRun({ envId: env.environmentId });
+
+// 3. Make API calls using executor
+const executor = new TypeScriptExecutorProxy(
+  env.environmentId,
+  client.getBaseUrl()
+);
+
+await executor.execute(`
+  await fetch('https://slack.com/api/chat.postMessage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      channel: 'C01GENERAL99',
+      text: 'Hello from TypeScript!'
+    })
+  });
+`);
+
+// 4. Get diff
+const diff = await client.diffRun({ runId: run.runId });
+
+console.log('\n📊 Changes detected:');
+for (const insert of diff.diff.inserts) {
+  console.log(`  + [${insert.__table__}] ${insert.message_text || JSON.stringify(insert)}`);
+}
+
+// 5. Cleanup
+await client.deleteEnv(env.environmentId);
+console.log('\n✓ Environment cleaned up');
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Vercel AI SDK" icon="triangle" href="/sdks/typescript/vercel-ai">
+    Integrate with Vercel AI SDK
+  </Card>
+  <Card title="Code Executors" icon="code" href="/executors/how-it-works">
+    Learn how API interception works
+  </Card>
+</CardGroup>
+

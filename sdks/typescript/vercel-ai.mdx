@@ -1,0 +1,212 @@
+---
+title: "Vercel AI SDK"
+description: "Integrate Agent Diff with Vercel AI SDK"
+---
+
+## Overview
+
+The [Vercel AI SDK](https://sdk.vercel.ai/) is a popular TypeScript toolkit for building AI applications. Agent Diff provides native integration through code executor tools.
+
+## Installation
+
+```bash
+npm install agent-diff ai @ai-sdk/openai
+```
+
+## Basic Integration
+
+```typescript
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { AgentDiff, TypeScriptExecutorProxy, createVercelAITool } from 'agent-diff';
+
+// Initialize client and environment
+const client = new AgentDiff();
+const env = await client.initEnv({
+  templateService: 'slack',
+  templateName: 'slack_default',
+  impersonateUserId: 'U01AGENBOT9'
+});
+
+// Create executor and Vercel AI tool
+const executor = new TypeScriptExecutorProxy(env.environmentId, client.getBaseUrl());
+const tool = await createVercelAITool(executor);
+
+// Start run
+const run = await client.startRun({ envId: env.environmentId });
+
+// Generate with tool
+const result = await generateText({
+  model: openai('gpt-4o'),
+  tools: { execute_typescript: tool },
+  prompt: `Post 'Hello World!' to Slack channel C01GENERAL99. 
+           Use fetch to call https://slack.com/api/chat.postMessage.
+           Authentication is handled automatically.`,
+  maxSteps: 5
+});
+
+console.log('Agent output:', result.text);
+
+// Get diff
+const diff = await client.diffRun({ runId: run.runId });
+console.log('Changes:', diff.diff);
+
+// Cleanup
+await client.deleteEnv(env.environmentId);
+```
+
+## Using Different Models
+
+```typescript
+import { anthropic } from '@ai-sdk/anthropic';
+import { google } from '@ai-sdk/google';
+
+// With Claude
+const result = await generateText({
+  model: anthropic('claude-sonnet-4-20250514'),
+  tools: { execute_typescript: tool },
+  prompt: "Post 'Hello' to #general on Slack",
+  maxSteps: 5
+});
+
+// With Gemini
+const result = await generateText({
+  model: google('gemini-1.5-pro'),
+  tools: { execute_typescript: tool },
+  prompt: "Post 'Hello' to #general on Slack",
+  maxSteps: 5
+});
+```
+
+## With Bash Executor
+
+For agents that prefer curl commands:
+
+```typescript
+import { BashExecutorProxy, createVercelAITool } from 'agent-diff';
+
+const bashExecutor = new BashExecutorProxy(env.environmentId, client.getBaseUrl());
+const bashTool = await createVercelAITool(bashExecutor);
+
+const result = await generateText({
+  model: openai('gpt-4o'),
+  tools: { execute_bash: bashTool },
+  prompt: `Use curl to post 'Hello' to Slack channel C01GENERAL99.
+           Call https://slack.com/api/chat.postMessage.`,
+  maxSteps: 5
+});
+```
+
+## Running Evaluations
+
+```typescript
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { AgentDiff, TypeScriptExecutorProxy, createVercelAITool } from 'agent-diff';
+
+const client = new AgentDiff();
+
+// Get test suite
+const suites = await client.listTestSuites({ name: 'Slack Bench' });
+const suite = await client.getTestSuite(suites.testSuites[0].id, { expand: true });
+
+const results: { test: string; passed: boolean; score: number }[] = [];
+
+for (const test of suite.tests) {
+  // Create environment for this test
+  const env = await client.initEnv({ testId: test.id });
+  
+  // Start run
+  const run = await client.startRun({ 
+    envId: env.environmentId, 
+    testId: test.id 
+  });
+  
+  // Create executor and tool
+  const executor = new TypeScriptExecutorProxy(env.environmentId, client.getBaseUrl());
+  const tool = await createVercelAITool(executor);
+  
+  // Run agent with test prompt
+  await generateText({
+    model: openai('gpt-4o'),
+    tools: { execute_typescript: tool },
+    prompt: test.prompt,
+    maxSteps: 10
+  });
+  
+  // Evaluate
+  const result = await client.evaluateRun({ runId: run.runId });
+  
+  results.push({
+    test: test.name,
+    passed: result.passed,
+    score: result.score
+  });
+  
+  // Cleanup
+  await client.deleteEnv(env.environmentId);
+}
+
+// Print results
+const passed = results.filter(r => r.passed).length;
+console.log(`\n📊 Results: ${passed}/${results.length} tests passed`);
+for (const r of results) {
+  console.log(`  ${r.passed ? '✓' : '✗'} ${r.test}`);
+}
+```
+
+## Streaming
+
+```typescript
+import { streamText } from 'ai';
+
+const result = streamText({
+  model: openai('gpt-4o'),
+  tools: { execute_typescript: tool },
+  prompt: "Post 'Hello' to #general on Slack",
+  maxSteps: 5
+});
+
+for await (const chunk of result.textStream) {
+  process.stdout.write(chunk);
+}
+```
+
+## Linear API Example
+
+```typescript
+const env = await client.initEnv({
+  templateService: 'linear',
+  templateName: 'linear_expanded',
+  impersonateEmail: 'agent@example.com'
+});
+
+const executor = new TypeScriptExecutorProxy(env.environmentId, client.getBaseUrl());
+const tool = await createVercelAITool(executor);
+
+const run = await client.startRun({ envId: env.environmentId });
+
+await generateText({
+  model: openai('gpt-4o'),
+  tools: { execute_typescript: tool },
+  prompt: `Create a new issue in Linear titled 'Fix login bug' in the Engineering team.
+           Use fetch to call https://api.linear.app/graphql.
+           Authentication is handled automatically.`,
+  maxSteps: 5
+});
+
+const diff = await client.diffRun({ runId: run.runId });
+console.log('Created issues:', diff.diff.inserts.filter(i => i.__table__ === 'issues'));
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Code Executors" icon="code" href="/executors/how-it-works">
+    Learn how API interception works
+  </Card>
+  <Card title="Evaluations" icon="check" href="/evaluations/overview">
+    Run benchmarks on your agents
+  </Card>
+</CardGroup>
+

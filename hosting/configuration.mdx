@@ -1,0 +1,218 @@
+---
+title: "Configuration"
+description: "Configure Agent Diff for your needs"
+---
+
+## Environment Variables
+
+### Required
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+
+### Optional
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LOGICAL_REPLICATION_ENABLED` | `true` | Enable diff capture via WAL |
+| `ENVIRONMENT` | `development` | Environment name |
+| `SEED` | `true` | Run seed scripts on startup |
+
+### Performance Tuning
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ENVIRONMENT_POOL_TARGETS` | Auto-detect | Target pool sizes per template |
+| `MAINTENANCE_IDLE_TIMEOUT` | `300` | Seconds before maintenance stops |
+| `MAINTENANCE_CYCLE_INTERVAL` | `10` | Seconds between cycles |
+| `POOL_REFILL_CONCURRENCY` | `10` | Parallel schema builds |
+| `REPLICATION_IDLE_TIMEOUT` | `300` | Seconds before replication stops |
+
+## Database Requirements
+
+### PostgreSQL Version
+
+- PostgreSQL 14+ recommended
+- PostgreSQL 16 for best performance
+
+### Logical Replication
+
+For diff capture, you need:
+
+```sql
+-- Check current settings
+SHOW wal_level;          -- Should be 'logical'
+SHOW max_replication_slots;  -- Should be >= 10
+SHOW max_wal_senders;    -- Should be >= 10
+```
+
+To configure (in postgresql.conf or as command args):
+
+```
+wal_level = logical
+max_replication_slots = 10
+max_wal_senders = 10
+```
+
+### Extensions
+
+Required extensions (auto-installed with Docker setup):
+
+- `wal2json` - For logical replication to JSON
+
+## Pool Configuration
+
+The environment pool pre-creates schemas for fast test startup.
+
+### Setting Pool Targets
+
+```bash
+# Via environment variable
+ENVIRONMENT_POOL_TARGETS="slack_default:50,linear_expanded:100"
+```
+
+Format: `template_name:target_count` pairs, comma-separated.
+
+### Auto-Detection
+
+If not set, Agent Diff auto-detects templates and sets a default target of 100 per template.
+
+## Scaling Considerations
+
+### Single Instance
+
+Default configuration works for development and small teams:
+- 10 concurrent builds
+- 100 pooled schemas per template
+
+### High Load
+
+For production with many concurrent users:
+
+```bash
+# Increase pool targets
+ENVIRONMENT_POOL_TARGETS="slack_default:200,linear_expanded:200"
+
+# Increase build concurrency
+POOL_REFILL_CONCURRENCY=20
+
+# Shorter maintenance cycles
+MAINTENANCE_CYCLE_INTERVAL=5
+```
+
+### Serverless (Neon)
+
+For Neon with scale-to-zero:
+
+```bash
+# Shorter timeouts to allow scale-to-zero
+MAINTENANCE_IDLE_TIMEOUT=60
+REPLICATION_IDLE_TIMEOUT=60
+```
+
+## Logging
+
+### Log Levels
+
+Agent Diff uses Python's logging:
+
+```python
+# In code, logs are at INFO level by default
+# DEBUG logs are available for troubleshooting
+```
+
+### Log Output
+
+Logs go to stdout, which Docker captures:
+
+```bash
+docker-compose logs -f backend
+```
+
+Example logs:
+
+```
+INFO - Environment cleanup service started
+INFO - Claimed pooled schema state_pool_abc123 for template slack_default
+INFO - Created environment abc123 from template slack_default
+DEBUG - Replication worker started for schema state_pool_abc123
+```
+
+## API Key Configuration
+
+### Development
+
+In development, API key validation is relaxed. A default key is auto-created:
+
+```bash
+# Reissue development API key
+make reissue-key
+```
+
+### Production
+
+In production, configure a control plane for API key validation:
+
+```bash
+CONTROL_PLANE_URL=https://your-control-plane.com
+```
+
+The control plane must implement:
+
+```http
+POST /validate
+Content-Type: application/json
+
+{"api_key": "ak_..."}
+```
+
+Response:
+```json
+{"valid": true, "user_id": "user-123"}
+```
+
+## Database Migrations
+
+### Run Migrations
+
+```bash
+# Via Docker
+docker exec ops-backend-1 alembic upgrade head
+
+# Via Makefile
+make create-migration MESSAGE="description"
+```
+
+### Migration Files
+
+Located in `backend/src/platform/db/migrations/versions/`
+
+## Health Checks
+
+### Endpoint
+
+```bash
+curl http://localhost:8000/api/platform/health
+```
+
+### Response
+
+```json
+{
+  "status": "healthy",
+  "service": "agent-diff"
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Neon Setup" icon="database" href="/hosting/neon-setup">
+    Use serverless PostgreSQL
+  </Card>
+  <Card title="API Reference" icon="book" href="/api-reference/introduction">
+    Complete API documentation
+  </Card>
+</CardGroup>
+

@@ -1,0 +1,116 @@
+---
+title: "List Templates"
+api: "GET /api/platform/templates"
+description: "Get all available environment templates"
+---
+
+## Request
+
+```bash
+GET /api/platform/templates
+```
+
+### Query Parameters
+
+<ParamField query="service" type="string">
+  Filter by service: `"slack"` or `"linear"`
+</ParamField>
+
+<ParamField query="visibility" type="string">
+  Filter by visibility: `"public"` or `"private"`
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.agentdiff.dev/api/platform/templates?service=slack" \
+  -H "X-API-Key: ak_your_key"
+```
+
+## Response
+
+<ResponseField name="templates" type="array">
+  List of available templates
+</ResponseField>
+
+### Example Response
+
+```json
+{
+  "templates": [
+    {
+      "id": "template-123",
+      "name": "slack_default",
+      "service": "slack",
+      "description": "Default Slack workspace with users and channels",
+      "location": "slack_default",
+      "visibility": "public",
+      "createdAt": "2025-01-01T00:00:00Z"
+    },
+    {
+      "id": "template-456",
+      "name": "slack_bench_default",
+      "service": "slack",
+      "description": "Extended Slack workspace for benchmarks",
+      "location": "slack_bench_default",
+      "visibility": "public",
+      "createdAt": "2025-01-01T00:00:00Z"
+    }
+  ]
+}
+```
+
+## Built-in Templates
+
+### Slack
+
+| Template | Contents | Use For |
+|----------|----------|---------|
+| `slack_default` | 3 users, 2 channels (#general, #random), 3 messages | Basic testing |
+| `slack_bench_default` | Extended with threads, reactions, DMs | Benchmark evaluations |
+| `slack_base` | Users and channels only (no messages) | Custom scenarios |
+
+**Key User IDs in Slack templates:**
+- `U01AGENBOT9` - Agent Bot (use for `impersonateUserId`)
+- `U02JOHNDOE1` - John Doe
+- `U03JANEDOE2` - Jane Doe
+
+**Key Channel IDs:**
+- `C01GENERAL99` - #general
+- `C02RANDOM123` - #random
+
+### Linear
+
+| Template | Contents | Use For |
+|----------|----------|---------|
+| `linear_expanded` | 2 teams, 40+ issues, labels, workflows, projects | Benchmark evaluations |
+| `linear_default` | 2 teams, 5 issues, basic workflows | Basic testing |
+| `linear_base` | Teams and users only | Custom scenarios |
+
+**Key Team IDs in Linear templates:**
+- `ad608998-915c-4bad-bcd9-85ebfccccee8` - Engineering (ENG)
+- `58c03c85-7b0c-466d-9a4c-120209fccb56` - Growth (GRO)
+
+<Tip>
+**View full seed data**: Check `examples/slack/seeds/` and `examples/linear/seeds/` in the repo to see all entities and their IDs.
+</Tip>
+
+## SDK Usage
+
+<CodeGroup>
+```python Python
+templates = client.list_templates()
+
+for t in templates.templates:
+    print(f"{t.name} ({t.service}) - {t.description}")
+```
+
+```typescript TypeScript
+const templates = await client.listTemplates();
+
+templates.templates.forEach(t => {
+  console.log(`${t.name} (${t.service}) - ${t.description}`);
+});
+```
+</CodeGroup>
+

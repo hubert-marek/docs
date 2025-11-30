@@ -1,0 +1,169 @@
+---
+title: "Linear Overview"
+description: "Linear GraphQL API replica for agent testing"
+---
+
+## Overview
+
+Agent Diff provides a high-fidelity replica of the Linear GraphQL API. Your agent can create issues, manage projects, update workflows, and more - all in an isolated environment.
+
+## Getting Started
+
+```python
+from agent_diff import AgentDiff
+
+client = AgentDiff()
+
+# Create Linear environment
+env = client.init_env(
+    templateService="linear",
+    templateName="linear_expanded",
+    impersonateEmail="agent@example.com"  # User your agent acts as
+)
+
+# API base URL
+print(env.environmentUrl)
+# Output: http://localhost:8000/api/env/{id}/services/linear
+```
+
+## Making API Calls
+
+### Direct HTTP
+
+```python
+import requests
+
+query = """
+query {
+  teams {
+    nodes {
+      id
+      name
+      key
+    }
+  }
+}
+"""
+
+response = requests.post(
+    f"{env.environmentUrl}/graphql",
+    json={"query": query}
+)
+data = response.json()
+print(data["data"]["teams"]["nodes"])
+```
+
+### Using Code Executor
+
+```python
+from agent_diff import PythonExecutorProxy
+
+executor = PythonExecutorProxy(env.environmentId, client.base_url)
+
+# Agent code uses production URLs - they get transformed automatically
+result = executor.execute("""
+import requests
+
+query = '''
+mutation {
+  issueCreate(input: {
+    title: "Fix login bug"
+    teamId: "team-123"
+  }) {
+    success
+    issue { id title }
+  }
+}
+'''
+
+response = requests.post('https://api.linear.app/graphql', json={
+    'query': query
+})
+print(response.json())
+""")
+```
+
+## Available Templates
+
+| Template | Description | Seed Data |
+|----------|-------------|-----------|
+| `linear_expanded` | Full workspace | Teams, issues, labels, workflows, projects |
+| `linear_default` | Standard workspace | Teams, users, basic issues |
+| `linear_base` | Minimal | Teams and users only |
+
+## Response Format
+
+Responses follow Linear's GraphQL format:
+
+```json
+{
+  "data": {
+    "issueCreate": {
+      "success": true,
+      "issue": {
+        "id": "issue-uuid",
+        "title": "Fix login bug",
+        "identifier": "ENG-42"
+      }
+    }
+  }
+}
+```
+
+## Error Handling
+
+Errors are returned in GraphQL format:
+
+```json
+{
+  "errors": [
+    {
+      "message": "Team not found",
+      "extensions": {
+        "code": "NOT_FOUND"
+      }
+    }
+  ]
+}
+```
+
+## Authentication
+
+In Agent Diff, authentication is mocked. The `impersonateEmail` you specify determines which user the agent acts as.
+
+```python
+env = client.init_env(
+    templateService="linear",
+    templateName="linear_expanded",
+    impersonateEmail="agent@example.com"  # Agent's identity
+)
+```
+
+## Linear Data Model
+
+```
+Organization
+├── Teams
+│   ├── Issues
+│   │   ├── Comments
+│   │   └── Labels (via issue_label_association)
+│   ├── Workflow States
+│   ├── Projects
+│   │   └── Milestones
+│   └── Cycles
+├── Users
+│   └── Team Memberships
+└── Labels (organization-level)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="GraphQL Queries" icon="code" href="/services/linear/queries">
+    Supported queries and mutations
+  </Card>
+  <Card title="Seed Files" icon="database" href="/services/linear/seeds">
+    Create custom seed data
+  </Card>
+</CardGroup>
+

@@ -1,0 +1,149 @@
+---
+title: "Create Template"
+api: "POST /api/platform/templates"
+description: "Create a new template from an existing environment"
+---
+
+## Request
+
+```bash
+POST /api/platform/templates
+```
+
+### Body Parameters
+
+<ParamField body="environmentId" type="string" required>
+  Environment ID to create template from
+</ParamField>
+
+<ParamField body="service" type="string" required>
+  Service type: `"slack"` or `"linear"`
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  Template name (must be unique, lowercase, no spaces)
+</ParamField>
+
+<ParamField body="description" type="string">
+  Template description
+</ParamField>
+
+<ParamField body="visibility" type="string" default="private">
+  `"public"` or `"private"`
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://api.agentdiff.dev/api/platform/templates \
+  -H "X-API-Key: ak_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "environmentId": "abc123def456",
+    "service": "slack",
+    "name": "my_custom_template",
+    "description": "Custom workspace with extra channels",
+    "visibility": "private"
+  }'
+```
+
+## Response
+
+<ResponseField name="templateId" type="string">
+  New template identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Template name
+</ResponseField>
+
+<ResponseField name="location" type="string">
+  Schema location
+</ResponseField>
+
+### Example Response
+
+```json
+{
+  "templateId": "template-789",
+  "name": "my_custom_template",
+  "location": "my_custom_template",
+  "service": "slack",
+  "visibility": "private"
+}
+```
+
+## Use Case
+
+Create custom templates with specific seed data:
+
+1. Create environment from base template
+2. Make API calls to add/modify data
+3. Save as new template
+4. Use new template for tests
+
+```python
+# 1. Start with base template
+env = client.init_env(
+    templateService="slack",
+    templateName="slack_default",
+    impersonateUserId="U01AGENBOT9"
+)
+
+# 2. Add custom data
+import requests
+requests.post(f"{env.environmentUrl}/conversations.create", json={
+    "name": "my-custom-channel"
+})
+
+# 3. Save as template
+template = client.create_template_from_environment(
+    environmentId=env.environmentId,
+    service="slack",
+    name="my_workspace",
+    description="Workspace with custom channel",
+    visibility="private"
+)
+
+# 4. Use in future tests
+env2 = client.init_env(
+    templateService="slack",
+    templateName="my_workspace",
+    impersonateUserId="U01AGENBOT9"
+)
+```
+
+## Errors
+
+| Error | Status | Description |
+|-------|--------|-------------|
+| `environment_not_found` | 404 | Environment doesn't exist |
+| `template_name_exists` | 400 | Template name already taken |
+| `invalid_template_name` | 400 | Invalid characters in name |
+
+## SDK Usage
+
+<CodeGroup>
+```python Python
+template = client.create_template_from_environment(
+    environmentId=env.environmentId,
+    service="slack",
+    name="my_custom_template",
+    description="Custom workspace",
+    visibility="private"
+)
+print(f"Created template: {template.templateId}")
+```
+
+```typescript TypeScript
+const template = await client.createTemplateFromEnvironment({
+  environmentId: env.environmentId,
+  service: 'slack',
+  name: 'my_custom_template',
+  description: 'Custom workspace',
+  visibility: 'private'
+});
+console.log(`Created template: ${template.templateId}`);
+```
+</CodeGroup>
+

@@ -1,0 +1,208 @@
+---
+title: "Bash Executor"
+description: "Execute shell commands with API interception"
+---
+
+## Overview
+
+The `BashExecutorProxy` intercepts `curl` commands and routes API calls to isolated environments. Code runs in a subprocess.
+
+## Basic Usage
+
+<Tabs>
+  <Tab title="Python SDK">
+```python
+from agent_diff import BashExecutorProxy
+
+# Create executor for an environment
+executor = BashExecutorProxy(
+    environment_id="env-123",
+    base_url="http://localhost:8000"
+)
+
+# Execute shell command
+result = executor.execute("""
+curl -X POST https://slack.com/api/chat.postMessage \
+  -H "Content-Type: application/json" \
+  -d '{"channel": "C01GENERAL99", "text": "Hello from bash!"}'
+""")
+
+print(result["stdout"])
+```
+  </Tab>
+  
+  <Tab title="TypeScript SDK">
+```typescript
+import { BashExecutorProxy } from 'agent-diff';
+
+// Create executor for an environment
+const executor = new BashExecutorProxy(
+  'env-123',
+  'http://localhost:8000'
+);
+
+// Execute shell command
+const result = await executor.execute(`
+  curl -X POST https://slack.com/api/chat.postMessage \\
+    -H "Content-Type: application/json" \\
+    -d '{"channel": "C01GENERAL99", "text": "Hello from bash!"}'
+`);
+
+console.log(result.stdout);
+```
+  </Tab>
+</Tabs>
+
+## Creating Framework Tools
+
+### Python - OpenAI Agents
+
+```python
+from agent_diff import BashExecutorProxy, create_openai_tool
+from agents import Agent
+
+executor = BashExecutorProxy(env.environmentId, client.base_url)
+tool = create_openai_tool(executor)
+
+agent = Agent(
+    name="CLI Agent",
+    tools=[tool],
+    instructions="Use execute_bash with curl to interact with Slack API..."
+)
+```
+
+### TypeScript - Vercel AI
+
+```typescript
+import { BashExecutorProxy, createVercelAITool } from 'agent-diff';
+
+const executor = new BashExecutorProxy(env.environmentId, client.getBaseUrl());
+const tool = await createVercelAITool(executor);
+```
+
+## URL Transformation
+
+The bash executor transforms curl URLs:
+
+```bash
+# Original command (what agent writes):
+curl https://slack.com/api/conversations.list
+
+# Transformed (what actually runs):
+curl http://localhost:8000/api/env/{id}/services/slack/conversations.list
+```
+
+## Execution Result
+
+```python
+result = executor.execute(command)
+
+# Result structure:
+{
+    "status": "success" | "error",
+    "stdout": "...",     # Command output
+    "stderr": "...",     # Error output
+    "exit_code": 0       # Process exit code
+}
+```
+
+## Example: Slack API Calls
+
+```bash
+# List channels
+curl https://slack.com/api/conversations.list
+
+# Post message
+curl -X POST https://slack.com/api/chat.postMessage \
+  -H "Content-Type: application/json" \
+  -d '{
+    "channel": "C01GENERAL99",
+    "text": "Hello!"
+  }'
+
+# Add reaction
+curl -X POST https://slack.com/api/reactions.add \
+  -H "Content-Type: application/json" \
+  -d '{
+    "channel": "C01GENERAL99",
+    "timestamp": "1234567890.123456",
+    "name": "thumbsup"
+  }'
+```
+
+## Example: Linear GraphQL
+
+```bash
+curl -X POST https://api.linear.app/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation { issueCreate(input: { title: \"Fix bug\", teamId: \"team-123\" }) { success } }"
+  }'
+```
+
+## Supported Commands
+
+The bash executor primarily intercepts:
+
+- **curl**: All HTTP methods, headers, data
+- Other commands run normally (piping, jq, etc.)
+
+## Complex Scripts
+
+You can write multi-line scripts:
+
+```bash
+# Get channels, then post to the first one
+CHANNELS=$(curl -s https://slack.com/api/conversations.list)
+FIRST_CHANNEL=$(echo $CHANNELS | jq -r '.channels[0].id')
+
+curl -X POST https://slack.com/api/chat.postMessage \
+  -H "Content-Type: application/json" \
+  -d "{\"channel\": \"$FIRST_CHANNEL\", \"text\": \"Hello!\"}"
+```
+
+## Configuration Options
+
+<Tabs>
+  <Tab title="Python">
+```python
+executor = BashExecutorProxy(
+    environment_id="env-123",
+    base_url="http://localhost:8000",
+    token="optional-auth-token"
+)
+```
+  </Tab>
+  
+  <Tab title="TypeScript">
+```typescript
+const executor = new BashExecutorProxy(
+  environmentId,
+  baseUrl,      // Default: http://localhost:8000
+  token         // Optional auth token
+);
+```
+  </Tab>
+</Tabs>
+
+## When to Use Bash Executor
+
+| Use Case | Recommended |
+|----------|-------------|
+| Simple API calls | ✓ Bash |
+| Complex logic/loops | Python/TS |
+| JSON manipulation | Python/TS |
+| Quick curl tests | ✓ Bash |
+| Multi-step workflows | Python/TS |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Python Executor" icon="python" href="/executors/python">
+    For complex scripts
+  </Card>
+  <Card title="How It Works" icon="gear" href="/executors/how-it-works">
+    Understand interception
+  </Card>
+</CardGroup>
+

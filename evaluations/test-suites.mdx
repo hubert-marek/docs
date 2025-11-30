@@ -1,0 +1,210 @@
+---
+title: "Test Suites"
+description: "Organize and manage collections of tests"
+---
+
+## What Is a Test Suite?
+
+A test suite is a collection of related tests that share:
+- A common service (Slack, Linear)
+- A template/seed configuration
+- Related functionality being tested
+
+## Test Suite Structure
+
+```json
+{
+  "id": "suite-123",
+  "name": "Slack Bench",
+  "description": "Core Slack agent capabilities",
+  "templateService": "slack",
+  "templateName": "slack_bench_default",
+  "impersonateUserId": "U01AGENBOT9",
+  "tests": [
+    {
+      "id": "test-001",
+      "name": "Post message to channel",
+      "prompt": "Post 'Hello World!' to #general",
+      "expectedOutput": {
+        "assertions": [...]
+      }
+    },
+    // More tests...
+  ]
+}
+```
+
+## Listing Test Suites
+
+```python
+from agent_diff import AgentDiff
+
+client = AgentDiff()
+
+# List all suites
+suites = client.list_test_suites()
+for suite in suites.testSuites:
+    print(f"- {suite.name} ({suite.id})")
+
+# Filter by name
+slack_suites = client.list_test_suites(name="Slack")
+```
+
+## Getting Suite Details
+
+```python
+# Get suite with test details
+suite = client.get_test_suite(suite_id, expand=True)
+
+print(f"Suite: {suite.name}")
+print(f"Tests: {len(suite.tests)}")
+
+for test in suite.tests:
+    print(f"  - {test.name}: {test.prompt}")
+```
+
+## Creating Test Suites
+
+```python
+# Create a new test suite
+suite = client.create_test_suite({
+    "name": "My Agent Tests",
+    "description": "Custom tests for my Slack agent",
+    "templateService": "slack",
+    "templateName": "slack_default",
+    "impersonateUserId": "U01AGENBOT9",
+    "visibility": "private"
+})
+
+print(f"Created suite: {suite.suiteId}")
+```
+
+## Adding Tests to a Suite
+
+```python
+# Add tests with assertions
+client.create_tests(suite.suiteId, {
+    "tests": [
+        {
+            "name": "Post welcome message",
+            "prompt": "Post a welcome message to #general",
+            "expectedOutput": {
+                "assertions": [{
+                    "diff_type": "added",
+                    "entity": "messages",
+                    "where": {
+                        "channel_id": {"eq": "C01GENERAL99"},
+                        "message_text": {"contains": "welcome"}
+                    },
+                    "expected_count": 1
+                }]
+            }
+        },
+        {
+            "name": "Create thread reply",
+            "prompt": "Reply 'Got it!' to the latest message in #general",
+            "expectedOutput": {
+                "assertions": [{
+                    "diff_type": "added",
+                    "entity": "messages",
+                    "where": {
+                        "parent_id": {"not_null": true},
+                        "message_text": {"eq": "Got it!"}
+                    }
+                }]
+            }
+        }
+    ]
+})
+```
+
+## Running All Tests in a Suite
+
+```python
+from agent_diff import AgentDiff, PythonExecutorProxy, create_openai_tool
+from agents import Agent, Runner
+
+client = AgentDiff()
+
+# Get suite
+suite = client.get_test_suite("suite-123", expand=True)
+
+results = []
+
+for test in suite.tests:
+    # Create environment for this test
+    env = client.init_env(testId=test.id)
+    run = client.start_run(envId=env.environmentId, testId=test.id)
+    
+    # Run agent
+    executor = PythonExecutorProxy(env.environmentId, client.base_url)
+    agent = Agent(
+        name="Test Agent",
+        tools=[create_openai_tool(executor)],
+        instructions="Use execute_python to interact with Slack API..."
+    )
+    await Runner.run(agent, test.prompt)
+    
+    # Evaluate
+    result = client.evaluate_run(runId=run.runId)
+    
+    results.append({
+        "test": test.name,
+        "passed": result.passed,
+        "score": result.score,
+        "failures": result.failures
+    })
+    
+    # Cleanup
+    client.delete_env(envId=env.environmentId)
+
+# Summary
+passed = sum(1 for r in results if r["passed"])
+print(f"\n Results: {passed}/{len(results)} tests passed")
+
+for r in results:
+    status = "✓" if r["passed"] else "✗"
+    print(f"  {status} {r['test']}")
+    if r["failures"]:
+        for f in r["failures"]:
+            print(f"      └─ {f}")
+```
+
+## Test Visibility
+
+| Visibility | Description |
+|------------|-------------|
+| `public` | Visible to all users |
+| `private` | Only visible to the creator |
+
+## Built-in Test Suites
+
+### Slack Bench
+
+20 tests covering:
+- Message posting
+- Channel operations
+- Reactions
+- Threading
+- User mentions
+
+### Linear Bench
+
+40 tests covering:
+- Issue creation/updates
+- Label management
+- Comments
+- Workflow state transitions
+- Team operations
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Writing Assertions" icon="pen" href="/evaluations/writing-assertions">
+    Define expected outcomes
+  </Card>
+  <Card title="DSL Reference" icon="code" href="/evaluations/dsl-reference">
+    All operators and predicates
+  </Card>
+</CardGroup>
+

@@ -1,0 +1,225 @@
+---
+title: "Basic Usage"
+description: "Core operations with the Python SDK"
+---
+
+## Environment Management
+
+### Create Environment
+
+```python
+from agent_diff import AgentDiff
+
+client = AgentDiff()
+
+env = client.init_env(
+    templateService="slack",       # Service type: "slack" or "linear"
+    templateName="slack_default",  # Template to clone from
+    impersonateUserId="U01AGENBOT9",  # User ID agent will act as
+    ttlSeconds=3600  # Auto-cleanup after 1 hour (default: 1800)
+)
+
+print(f"Environment ID: {env.environmentId}")
+print(f"API URL: {env.environmentUrl}")
+print(f"Schema: {env.schemaName}")
+print(f"Expires: {env.expiresAt}")
+```
+
+### Delete Environment
+
+```python
+client.delete_env(envId=env.environmentId)
+```
+
+<Warning>
+Always delete environments when done to free up resources. Environments auto-expire after TTL, but explicit cleanup is faster.
+</Warning>
+
+---
+
+## Run Management
+
+### Start Run
+
+```python
+# Start a run (takes "before" snapshot)
+run = client.start_run(envId=env.environmentId)
+
+print(f"Run ID: {run.runId}")
+print(f"Status: {run.status}")  # "running"
+```
+
+### Get Diff
+
+After your agent has made changes:
+
+```python
+# Compute diff between before and after states
+diff = client.diff_run(runId=run.runId)
+
+print("New records:", diff.diff['inserts'])
+print("Modified records:", diff.diff['updates'])
+print("Deleted records:", diff.diff['deletes'])
+```
+
+### Evaluate Run
+
+If you have a test with assertions:
+
+```python
+# Run assertions against the diff
+result = client.evaluate_run(runId=run.runId)
+
+print(f"Passed: {result.passed}")
+print(f"Score: {result.score}")
+```
+
+### Get Results
+
+```python
+results = client.get_results_for_run(runId=run.runId)
+
+print(f"Status: {results.status}")
+print(f"Failures: {results.failures}")
+print(f"Diff: {results.diff}")
+```
+
+---
+
+## Template Management
+
+### List Templates
+
+```python
+templates = client.list_templates()
+
+for t in templates.templates:
+    print(f"- {t.name} ({t.service})")
+    print(f"  Description: {t.description}")
+    print(f"  Visibility: {t.visibility}")
+```
+
+### Create Custom Template
+
+```python
+# First, create and customize an environment
+env = client.init_env(
+    templateService="slack",
+    templateName="slack_default"
+)
+
+# Make customizations via API...
+# (add users, channels, etc.)
+
+# Save as new template
+custom = client.create_template_from_environment(
+    environmentId=env.environmentId,
+    service="slack",
+    name="my_custom_template",
+    description="Customized workspace with extra channels",
+    visibility="private"
+)
+
+print(f"Created template: {custom.templateId}")
+```
+
+---
+
+## Test Suite Management
+
+### List Test Suites
+
+```python
+suites = client.list_test_suites()
+
+for suite in suites.testSuites:
+    print(f"- {suite.name} (ID: {suite.id})")
+```
+
+### Get Test Suite with Tests
+
+```python
+# Get suite with expanded test details
+suite = client.get_test_suite(suite_id, expand=True)
+
+print(f"Suite: {suite.name}")
+for test in suite.tests:
+    print(f"  - {test.name}: {test.prompt}")
+```
+
+### Run Test from Suite
+
+```python
+# Get a specific test
+test = suite.tests[0]
+
+# Create environment for this test
+env = client.init_env(testId=test.id)
+
+# Start run
+run = client.start_run(envId=env.environmentId, testId=test.id)
+
+# Run your agent with test.prompt
+# ...
+
+# Evaluate against test assertions
+result = client.evaluate_run(runId=run.runId)
+
+print(f"Test: {test.name}")
+print(f"Passed: {result.passed}")
+print(f"Failures: {result.failures}")
+```
+
+---
+
+## Complete Example
+
+```python
+from agent_diff import AgentDiff
+import requests
+
+client = AgentDiff()
+
+# 1. Create environment
+env = client.init_env(
+    templateService="slack",
+    templateName="slack_default",
+    impersonateUserId="U01AGENBOT9"
+)
+
+# 2. Start run
+run = client.start_run(envId=env.environmentId)
+
+# 3. Make API calls to the isolated environment
+response = requests.post(
+    f"{env.environmentUrl}/chat.postMessage",
+    json={
+        "channel": "C01GENERAL99",
+        "text": "Hello from my agent!"
+    }
+)
+print(f"API Response: {response.json()}")
+
+# 4. Get diff
+diff = client.diff_run(runId=run.runId)
+
+print("\n📊 Changes detected:")
+for insert in diff.diff['inserts']:
+    print(f"  + [{insert['__table__']}] {insert.get('message_text', insert)}")
+
+# 5. Cleanup
+client.delete_env(envId=env.environmentId)
+print("\n✓ Environment cleaned up")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Code Executors" icon="code" href="/executors/how-it-works">
+    Use proxy tools for agent frameworks
+  </Card>
+  <Card title="OpenAI Agents" icon="robot" href="/sdks/python/openai-agents">
+    Integrate with OpenAI Agents SDK
+  </Card>
+</CardGroup>
+

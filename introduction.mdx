@@ -1,0 +1,180 @@
+---
+title: "What is Agent Diff?"
+description: "Interactive environments for evaluating AI agents & RL training on replicas of 3rd party APIs"
+---
+
+<Frame>
+  <img
+    className="block dark:hidden"
+    src="/images/hero-light.png"
+    alt="Agent Diff Hero"
+  />
+  <img
+    className="hidden dark:block"
+    src="/images/hero-dark.png"
+    alt="Agent Diff Hero"
+  />
+</Frame>
+
+## The Problem
+
+Building AI agents that interact with external APIs (Slack, Linear, Jira, etc.) is painful:
+
+<CardGroup cols={2}>
+  <Card title="Side Effects" icon="warning">
+    Every test run creates real messages, tickets, or data in production or staging environments
+  </Card>
+  <Card title="Rate Limits" icon="clock">
+    API rate limits slow down development and make batch evaluations impossible
+  </Card>
+  <Card title="Non-Deterministic" icon="shuffle">
+    External service state changes between runs, making tests flaky
+  </Card>
+  <Card title="Expensive" icon="dollar-sign">
+    Paying for API calls during development and evaluation adds up fast
+  </Card>
+</CardGroup>
+
+## The Solution
+
+**Agent Diff** provides isolated, ephemeral replicas of APIs that behave like the real thing:
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        YOUR AI AGENT                              │
+│                             │                                     │
+│                    requests.post(                                 │
+│                      'https://slack.com/api/chat.postMessage'     │
+│                    )                                              │
+└────────────────────────────┬─────────────────────────────────────┘
+                             │
+                             ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                    AGENT DIFF PROXY                               │
+│                                                                   │
+│    Intercepts API calls and routes to isolated environment        │
+│                                                                   │
+│    slack.com/api/* → localhost:8000/api/env/{id}/services/slack   │
+└────────────────────────────┬─────────────────────────────────────┘
+                             │
+                             ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                 ISOLATED ENVIRONMENT                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐               │
+│  │   Users     │  │  Channels   │  │  Messages   │               │
+│  │  U001,U002  │  │  #general   │  │  "Hello"    │               │
+│  └─────────────┘  └─────────────┘  └─────────────┘               │
+│                                                                   │
+│  Fully isolated PostgreSQL schema with seed data                  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion title="Isolated Environments" icon="box">
+    Each test gets its own database schema with seed data. No cross-contamination between tests or users.
+  </Accordion>
+  
+  <Accordion title="Deterministic Diffs" icon="code-compare">
+    Capture the exact state changes your agent made: inserts, updates, and deletes across all tables.
+    
+    ```python
+    diff = client.diff_run(runId=run.runId)
+    print(diff.diff['inserts'])  # New records created
+    print(diff.diff['updates'])  # Records modified  
+    print(diff.diff['deletes'])  # Records removed
+    ```
+  </Accordion>
+  
+  <Accordion title="Assertion DSL" icon="check-double">
+    Define expected outcomes in JSON and automatically evaluate agent performance.
+    
+    ```json
+    {
+      "assertions": [{
+        "diff_type": "added",
+        "entity": "messages",
+        "where": {
+          "channelId": {"eq": "C01GENERAL99"},
+          "body": {"contains": "hello"}
+        },
+        "expected_count": 1
+      }]
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Framework Agnostic" icon="plug">
+    Works with any agent framework: OpenAI Agents SDK, LangChain, Vercel AI SDK, smolagents, or custom agents.
+  </Accordion>
+  
+  <Accordion title="Self-Hosted" icon="server">
+    Run locally with Docker or deploy to your own infrastructure. Your data never leaves your control.
+  </Accordion>
+</AccordionGroup>
+
+## Supported APIs
+
+<CardGroup cols={2}>
+  <Card title="Slack" icon="slack" href="/services/slack/overview">
+    Web API coverage for conversations, chat, reactions, users, and more
+  </Card>
+  <Card title="Linear" icon="square-kanban" href="/services/linear/overview">
+    GraphQL API for issues, teams, projects, comments, and workflow states
+  </Card>
+</CardGroup>
+
+<Note>
+More APIs coming soon. [Request an integration →](https://github.com/hubertpysklo/agent-diff/issues)
+</Note>
+
+## How It Works
+
+<Steps>
+  <Step title="Create Environment">
+    Initialize an isolated environment from a template with seed data
+    ```python
+    env = client.init_env(templateService="slack", templateName="slack_default")
+    ```
+  </Step>
+  
+  <Step title="Start Run">
+    Take a "before" snapshot and begin capturing changes
+    ```python
+    run = client.start_run(envId=env.environmentId)
+    ```
+  </Step>
+  
+  <Step title="Run Agent">
+    Your agent interacts with the isolated API replica
+    ```python
+    agent.run("Post 'Hello' to #general on Slack")
+    ```
+  </Step>
+  
+  <Step title="Get Diff">
+    Compute the diff between before/after states
+    ```python
+    result = client.diff_run(runId=run.runId)
+    ```
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get up and running in 5 minutes
+  </Card>
+  <Card title="Core Concepts" icon="book" href="/concepts">
+    Understand environments, templates, and diffs
+  </Card>
+  <Card title="Python SDK" icon="python" href="/sdks/python/installation">
+    Full SDK reference for Python
+  </Card>
+  <Card title="TypeScript SDK" icon="js" href="/sdks/typescript/installation">
+    Full SDK reference for TypeScript
+  </Card>
+</CardGroup>
+

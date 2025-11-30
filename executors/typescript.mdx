@@ -1,0 +1,188 @@
+---
+title: "TypeScript Executor"
+description: "Execute TypeScript code with API interception"
+---
+
+## Overview
+
+The `TypeScriptExecutorProxy` intercepts the `fetch` API and routes calls to isolated environments. Code runs in-process using Node.js.
+
+## Basic Usage
+
+```typescript
+import { TypeScriptExecutorProxy } from 'agent-diff';
+
+// Create executor for an environment
+const executor = new TypeScriptExecutorProxy(
+  'env-123',
+  'http://localhost:8000'  // Optional, defaults to localhost
+);
+
+// Execute code
+const result = await executor.execute(`
+  const response = await fetch('https://slack.com/api/chat.postMessage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      channel: 'C01GENERAL99',
+      text: 'Hello from TypeScript!'
+    })
+  });
+  const data = await response.json();
+  console.log(data);
+`);
+
+console.log(result.stdout);  // API response
+console.log(result.status);  // "success" or "error"
+```
+
+## Creating Framework Tools
+
+### Vercel AI SDK
+
+```typescript
+import { TypeScriptExecutorProxy, createVercelAITool } from 'agent-diff';
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+const executor = new TypeScriptExecutorProxy(env.environmentId, client.getBaseUrl());
+const tool = await createVercelAITool(executor);
+
+const result = await generateText({
+  model: openai('gpt-4o'),
+  tools: { execute_typescript: tool },
+  prompt: "Post 'Hello' to Slack channel #general",
+  maxSteps: 5
+});
+```
+
+## Supported APIs
+
+The TypeScript executor intercepts:
+
+- **fetch**: Global fetch API
+- **node-fetch**: (If imported)
+
+## Execution Result
+
+```typescript
+const result = await executor.execute(code);
+
+// Result structure:
+interface ExecutionResult {
+  status: 'success' | 'error';
+  stdout: string;     // Captured console.log output
+  stderr: string;     // Error output if any
+  exitCode?: number;  // Process exit code
+  error?: string;     // Error message if any
+}
+```
+
+## Error Handling
+
+```typescript
+const result = await executor.execute(code);
+
+if (result.status === 'error') {
+  console.error(`Execution failed: ${result.stderr}`);
+} else {
+  console.log(`Output: ${result.stdout}`);
+}
+```
+
+## Example: Slack API Calls
+
+```typescript
+const result = await executor.execute(`
+  // List channels
+  const channelsRes = await fetch('https://slack.com/api/conversations.list');
+  const channels = await channelsRes.json();
+  console.log('Channels:', channels.channels.map(c => c.name));
+
+  // Post message
+  const msgRes = await fetch('https://slack.com/api/chat.postMessage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      channel: 'C01GENERAL99',
+      text: 'Hello!'
+    })
+  });
+  const msg = await msgRes.json();
+  console.log('Message sent:', msg.ok);
+`);
+```
+
+## Example: Linear GraphQL
+
+```typescript
+const result = await executor.execute(`
+  const query = \`
+    mutation {
+      issueCreate(input: {
+        title: "Fix bug"
+        teamId: "team-123"
+      }) {
+        success
+        issue { id title }
+      }
+    }
+  \`;
+
+  const response = await fetch('https://api.linear.app/graphql', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query })
+  });
+
+  console.log(await response.json());
+`);
+```
+
+## Configuration Options
+
+```typescript
+const executor = new TypeScriptExecutorProxy(
+  environmentId: string,
+  baseUrl?: string,      // Default: http://localhost:8000
+  token?: string         // Optional auth token
+);
+```
+
+## Async/Await Support
+
+The TypeScript executor fully supports async/await:
+
+```typescript
+const result = await executor.execute(`
+  async function main() {
+    const res1 = await fetch('https://slack.com/api/conversations.list');
+    const channels = await res1.json();
+    
+    for (const channel of channels.channels.slice(0, 3)) {
+      await fetch('https://slack.com/api/chat.postMessage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: channel.id,
+          text: 'Hello to ' + channel.name
+        })
+      });
+    }
+  }
+  
+  await main();
+`);
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Python Executor" icon="python" href="/executors/python">
+    Execute Python code
+  </Card>
+  <Card title="Bash Executor" icon="terminal" href="/executors/bash">
+    Execute shell commands
+  </Card>
+</CardGroup>
+

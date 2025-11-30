@@ -1,0 +1,99 @@
+---
+title: "Start Run"
+api: "POST /api/platform/startRun"
+description: "Start a test run and capture the 'before' snapshot"
+---
+
+## Request
+
+```bash
+POST /api/platform/startRun
+```
+
+### Body Parameters
+
+<ParamField body="envId" type="string" required>
+  Environment ID from `initEnv`
+</ParamField>
+
+<ParamField body="testId" type="string">
+  Optional test ID for evaluation against assertions
+</ParamField>
+
+<ParamField body="testSuiteId" type="string">
+  Optional test suite ID for grouping results
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://api.agentdiff.dev/api/platform/startRun \
+  -H "X-API-Key: ak_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "envId": "abc123def456",
+    "testId": "test-789"
+  }'
+```
+
+## Response
+
+<ResponseField name="runId" type="string">
+  Unique run identifier
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Run status: `"running"`
+</ResponseField>
+
+<ResponseField name="beforeSnapshot" type="string">
+  Snapshot ID for the 'before' state
+</ResponseField>
+
+### Example Response
+
+```json
+{
+  "runId": "run-xyz789",
+  "status": "running",
+  "beforeSnapshot": "snapshot_abc123_1732645800"
+}
+```
+
+## What Happens
+
+1. **Snapshot captured**: Current database state is recorded
+2. **Replication started**: WAL changes begin being captured
+3. **Run created**: Test run record created in database
+
+<Note>
+After `startRun`, all changes to the environment are tracked until `diffRun` or `evaluateRun` is called.
+</Note>
+
+## Errors
+
+| Error | Status | Description |
+|-------|--------|-------------|
+| `environment_not_found` | 404 | Environment doesn't exist or expired |
+| `run_already_exists` | 400 | A run is already active for this environment |
+
+## SDK Usage
+
+<CodeGroup>
+```python Python
+run = client.start_run(
+    envId=env.environmentId,
+    testId="test-123"  # Optional
+)
+print(f"Run ID: {run.runId}")
+```
+
+```typescript TypeScript
+const run = await client.startRun({
+  envId: env.environmentId,
+  testId: 'test-123'  // Optional
+});
+console.log(`Run ID: ${run.runId}`);
+```
+</CodeGroup>
+

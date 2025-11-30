@@ -1,0 +1,127 @@
+---
+title: "Get Results"
+api: "GET /api/platform/results/{runId}"
+description: "Retrieve results for a completed test run"
+---
+
+## Request
+
+```bash
+GET /api/platform/results/{runId}
+```
+
+### Path Parameters
+
+<ParamField path="runId" type="string" required>
+  Run ID from `startRun`
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X GET https://api.agentdiff.dev/api/platform/results/run-xyz789 \
+  -H "X-API-Key: ak_your_key"
+```
+
+## Response
+
+<ResponseField name="runId" type="string">
+  Run identifier
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Run status: `"passed"`, `"failed"`, or `"running"`
+</ResponseField>
+
+<ResponseField name="passed" type="boolean">
+  Whether all assertions passed
+</ResponseField>
+
+<ResponseField name="score" type="object">
+  Score breakdown
+</ResponseField>
+
+<ResponseField name="failures" type="array">
+  List of failed assertions
+</ResponseField>
+
+<ResponseField name="diff" type="object">
+  Full diff with inserts, updates, deletes
+</ResponseField>
+
+<ResponseField name="execution_time" type="number">
+  Time in seconds from startRun to completion
+</ResponseField>
+
+### Example Response
+
+```json
+{
+  "runId": "run-xyz789",
+  "status": "passed",
+  "passed": true,
+  "score": {
+    "passed": 2,
+    "total": 2,
+    "percent": 100.0
+  },
+  "failures": [],
+  "diff": {
+    "inserts": [
+      {
+        "__table__": "messages",
+        "message_id": "1732645891.000200",
+        "message_text": "Hello World!"
+      }
+    ],
+    "updates": [],
+    "deletes": []
+  },
+  "execution_time": 2.45
+}
+```
+
+## Use Cases
+
+- **Polling**: Check if a run is complete
+- **Debugging**: Inspect detailed diff after a failed test
+- **Logging**: Store results for analysis
+
+## Errors
+
+| Error | Status | Description |
+|-------|--------|-------------|
+| `run_not_found` | 404 | Run doesn't exist |
+
+## SDK Usage
+
+<CodeGroup>
+```python Python
+results = client.get_results_for_run(runId=run.runId)
+
+print(f"Status: {results.status}")
+print(f"Passed: {results.passed}")
+print(f"Score: {results.score['percent']}%")
+print(f"Execution time: {results.execution_time}s")
+
+if results.failures:
+    print("Failures:")
+    for f in results.failures:
+        print(f"  - {f}")
+```
+
+```typescript TypeScript
+const results = await client.getResultsForRun(run.runId);
+
+console.log(`Status: ${results.status}`);
+console.log(`Passed: ${results.passed}`);
+console.log(`Score: ${results.score.percent}%`);
+console.log(`Execution time: ${results.execution_time}s`);
+
+if (results.failures) {
+  console.log('Failures:');
+  results.failures.forEach(f => console.log(`  - ${f}`));
+}
+```
+</CodeGroup>
+

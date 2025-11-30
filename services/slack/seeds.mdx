@@ -1,0 +1,301 @@
+---
+title: "Slack Seed Files"
+description: "Create custom seed data for Slack environments"
+---
+
+## Overview
+
+Seed files define the initial state of a Slack workspace. They're JSON files that specify users, channels, messages, and other data.
+
+## Quick Reference: slack_default
+
+The most commonly used template. Here's what's inside:
+
+<Tabs>
+  <Tab title="Users">
+    | User ID | Username | Name | Email |
+    |---------|----------|------|-------|
+    | `U01AGENBOT9` | agent_bot | Agent Bot | agent@example.com |
+    | `U02JOHNDOE1` | john.doe | John Doe | john@example.com |
+    | `U03JANEDOE2` | jane.doe | Jane Doe | jane@example.com |
+    
+    <Tip>Use `U01AGENBOT9` as your `impersonateUserId` - this is the agent's identity.</Tip>
+  </Tab>
+  <Tab title="Channels">
+    | Channel ID | Name | Type | Members |
+    |------------|------|------|---------|
+    | `C01GENERAL99` | #general | public | All users |
+    | `C02RANDOM123` | #random | public | All users |
+  </Tab>
+  <Tab title="Messages">
+    | Message ID | Channel | From | Text |
+    |------------|---------|------|------|
+    | `1732645800.000100` | #general | John | "Welcome to the team!" |
+    | `1732645810.000200` | #general | Jane | "Thanks!" |
+    | `1732645820.000300` | #random | John | "Anyone for lunch?" |
+  </Tab>
+</Tabs>
+
+## Seed File Location
+
+Seeds are stored in `examples/slack/seeds/`:
+
+```
+examples/
+└── slack/
+    └── seeds/
+        ├── slack_default.json
+        ├── slack_bench_default.json
+        └── your_custom_seed.json
+```
+
+## Schema
+
+### Users
+
+```json
+{
+  "users": [
+    {
+      "user_id": "U01AGENBOT9",
+      "username": "agent_bot",
+      "display_name": "Agent Bot",
+      "email": "agent@example.com",
+      "is_bot": true,
+      "is_admin": false,
+      "status_text": "Working hard",
+      "status_emoji": ":robot_face:",
+      "timezone": "America/Los_Angeles"
+    }
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `user_id` | string | Yes | Unique user ID (format: `U` + alphanumeric) |
+| `username` | string | Yes | Username (no spaces) |
+| `display_name` | string | No | Display name |
+| `email` | string | No | Email address |
+| `is_bot` | boolean | No | Is this a bot user |
+| `is_admin` | boolean | No | Has admin privileges |
+
+### Channels
+
+```json
+{
+  "channels": [
+    {
+      "channel_id": "C01GENERAL99",
+      "name": "general",
+      "topic": "Company-wide announcements",
+      "purpose": "General discussion",
+      "is_private": false,
+      "is_archived": false,
+      "creator_id": "U01AGENBOT9"
+    }
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `channel_id` | string | Yes | Unique channel ID (`C` + alphanumeric) |
+| `name` | string | Yes | Channel name (lowercase, no spaces) |
+| `topic` | string | No | Channel topic |
+| `purpose` | string | No | Channel purpose |
+| `is_private` | boolean | No | Private channel (default: false) |
+| `is_archived` | boolean | No | Archived (default: false) |
+
+### Channel Members
+
+```json
+{
+  "channel_members": [
+    {
+      "channel_id": "C01GENERAL99",
+      "user_id": "U01AGENBOT9"
+    },
+    {
+      "channel_id": "C01GENERAL99",
+      "user_id": "U02JOHNDOE1"
+    }
+  ]
+}
+```
+
+### Messages
+
+```json
+{
+  "messages": [
+    {
+      "message_id": "1732645800.000100",
+      "channel_id": "C01GENERAL99",
+      "user_id": "U02JOHNDOE1",
+      "message_text": "Welcome to the team!",
+      "parent_id": null
+    },
+    {
+      "message_id": "1732645810.000200",
+      "channel_id": "C01GENERAL99",
+      "user_id": "U01AGENBOT9",
+      "message_text": "Thanks!",
+      "parent_id": "1732645800.000100"
+    }
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `message_id` | string | Yes | Message timestamp ID |
+| `channel_id` | string | Yes | Channel the message is in |
+| `user_id` | string | Yes | User who sent the message |
+| `message_text` | string | Yes | Message content |
+| `parent_id` | string | No | Parent message ID (for threads) |
+
+### Reactions
+
+```json
+{
+  "reactions": [
+    {
+      "message_id": "1732645800.000100",
+      "channel_id": "C01GENERAL99",
+      "user_id": "U01AGENBOT9",
+      "reaction_name": "thumbsup"
+    }
+  ]
+}
+```
+
+## Complete Example
+
+```json
+{
+  "users": [
+    {
+      "user_id": "U01AGENBOT9",
+      "username": "agent_bot",
+      "display_name": "Agent Bot",
+      "email": "agent@example.com",
+      "is_bot": true
+    },
+    {
+      "user_id": "U02JOHNDOE1",
+      "username": "john.doe",
+      "display_name": "John Doe",
+      "email": "john@example.com"
+    },
+    {
+      "user_id": "U03JANEDOE2",
+      "username": "jane.doe",
+      "display_name": "Jane Doe",
+      "email": "jane@example.com"
+    }
+  ],
+  "channels": [
+    {
+      "channel_id": "C01GENERAL99",
+      "name": "general",
+      "topic": "Company-wide announcements",
+      "is_private": false
+    },
+    {
+      "channel_id": "C02RANDOM123",
+      "name": "random",
+      "topic": "Random stuff",
+      "is_private": false
+    },
+    {
+      "channel_id": "C03PRIVATE99",
+      "name": "private-team",
+      "is_private": true
+    }
+  ],
+  "channel_members": [
+    {"channel_id": "C01GENERAL99", "user_id": "U01AGENBOT9"},
+    {"channel_id": "C01GENERAL99", "user_id": "U02JOHNDOE1"},
+    {"channel_id": "C01GENERAL99", "user_id": "U03JANEDOE2"},
+    {"channel_id": "C02RANDOM123", "user_id": "U01AGENBOT9"},
+    {"channel_id": "C02RANDOM123", "user_id": "U02JOHNDOE1"},
+    {"channel_id": "C03PRIVATE99", "user_id": "U02JOHNDOE1"},
+    {"channel_id": "C03PRIVATE99", "user_id": "U03JANEDOE2"}
+  ],
+  "messages": [
+    {
+      "message_id": "1732645800.000100",
+      "channel_id": "C01GENERAL99",
+      "user_id": "U02JOHNDOE1",
+      "message_text": "Welcome everyone!"
+    },
+    {
+      "message_id": "1732645810.000200",
+      "channel_id": "C01GENERAL99",
+      "user_id": "U03JANEDOE2",
+      "message_text": "Thanks John!",
+      "parent_id": "1732645800.000100"
+    }
+  ],
+  "reactions": [
+    {
+      "message_id": "1732645800.000100",
+      "channel_id": "C01GENERAL99",
+      "user_id": "U03JANEDOE2",
+      "reaction_name": "wave"
+    }
+  ]
+}
+```
+
+## Creating a Custom Template
+
+1. Create your seed file in `examples/slack/seeds/my_seed.json`
+
+2. Register the template:
+
+```python
+# In utils/seed_slack_template.py or via API
+client.create_template_from_seed(
+    service="slack",
+    name="my_custom_template",
+    seed_file="examples/slack/seeds/my_seed.json",
+    visibility="private"
+)
+```
+
+3. Use your template:
+
+```python
+env = client.init_env(
+    templateService="slack",
+    templateName="my_custom_template",
+    impersonateUserId="U01AGENBOT9"
+)
+```
+
+## Tips
+
+<Tip>
+**ID Format**: Follow Slack's ID conventions:
+- Users: `U` + 10 alphanumeric (e.g., `U01AGENBOT9`)
+- Channels: `C` + 10 alphanumeric (e.g., `C01GENERAL99`)
+- Messages: Unix timestamp with microseconds (e.g., `1732645800.000100`)
+</Tip>
+
+<Warning>
+**Member Requirements**: Users must be members of a channel to post messages or add reactions. Always include corresponding `channel_members` entries.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Methods" icon="list" href="/services/slack/methods">
+    Supported API endpoints
+  </Card>
+  <Card title="Linear Seeds" icon="database" href="/services/linear/seeds">
+    Create Linear seed data
+  </Card>
+</CardGroup>
+

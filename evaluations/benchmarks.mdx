@@ -1,0 +1,307 @@
+---
+title: "Running Benchmarks"
+description: "Evaluate agents at scale with benchmark suites"
+---
+
+## Overview
+
+Benchmarks let you systematically evaluate your agent against a suite of tests, tracking pass rates and comparing models.
+
+## Built-in Benchmarks
+
+### Slack Bench
+
+```python
+suites = client.list_test_suites(name="Slack Bench")
+suite = client.get_test_suite(suites.testSuites[0].id, expand=True)
+print(f"Slack Bench: {len(suite.tests)} tests")
+```
+
+**Coverage:**
+- Message sending (5 tests)
+- Channel operations (4 tests)
+- Reactions (3 tests)
+- Threading (4 tests)
+- User mentions (4 tests)
+
+### Linear Bench
+
+```python
+suites = client.list_test_suites(name="Linear Bench")
+suite = client.get_test_suite(suites.testSuites[0].id, expand=True)
+print(f"Linear Bench: {len(suite.tests)} tests")
+```
+
+**Coverage:**
+- Issue CRUD (12 tests)
+- Labels (6 tests)
+- Comments (5 tests)
+- Workflow states (8 tests)
+- Team operations (5 tests)
+- Projects (4 tests)
+
+## Running a Full Benchmark
+
+```python
+import asyncio
+import json
+from datetime import datetime
+from agent_diff import AgentDiff, PythonExecutorProxy, create_openai_tool
+from agents import Agent, Runner
+
+client = AgentDiff()
+
+async def run_benchmark(suite_name: str, model: str = "gpt-4o"):
+    """Run a full benchmark suite and return results."""
+    
+    # Get suite
+    suites = client.list_test_suites(name=suite_name)
+    suite = client.get_test_suite(suites.testSuites[0].id, expand=True)
+    
+    results = []
+    
+    for i, test in enumerate(suite.tests):
+        print(f"[{i+1}/{len(suite.tests)}] Running: {test.name}")
+        
+        start_time = datetime.now()
+        
+        # Create environment
+        env = client.init_env(testId=test.id)
+        run = client.start_run(envId=env.environmentId, testId=test.id)
+        
+        try:
+            # Create agent
+            executor = PythonExecutorProxy(env.environmentId, client.base_url)
+            agent = Agent(
+                model=model,
+                name="Benchmark Agent",
+                tools=[create_openai_tool(executor)],
+                instructions="Use execute_python to interact with the API..."
+            )
+            
+            # Run
+            await Runner.run(agent, test.prompt)
+            
+            # Evaluate
+            result = client.evaluate_run(runId=run.runId)
+            
+            elapsed = (datetime.now() - start_time).total_seconds()
+            
+            results.append({
+                "test_id": test.id,
+                "test_name": test.name,
+                "passed": result.passed,
+                "score": result.score,
+                "failures": result.failures,
+                "elapsed_seconds": elapsed
+            })
+            
+            status = "✓" if result.passed else "✗"
+            print(f"    {status} {result.score:.0%} ({elapsed:.1f}s)")
+            
+        except Exception as e:
+            results.append({
+                "test_id": test.id,
+                "test_name": test.name,
+                "passed": False,
+                "score": 0,
+                "error": str(e),
+                "elapsed_seconds": (datetime.now() - start_time).total_seconds()
+            })
+            print(f"    ✗ Error: {e}")
+        
+        finally:
+            client.delete_env(envId=env.environmentId)
+    
+    return results
+
+# Run benchmark
+results = asyncio.run(run_benchmark("Slack Bench", model="gpt-4o"))
+
+# Summary
+passed = sum(1 for r in results if r["passed"])
+total_time = sum(r["elapsed_seconds"] for r in results)
+
+print(f"\n{'='*50}")
+print(f"BENCHMARK RESULTS: Slack Bench")
+print(f"{'='*50}")
+print(f"Passed: {passed}/{len(results)} ({passed/len(results):.0%})")
+print(f"Total time: {total_time:.1f}s")
+print(f"Avg time per test: {total_time/len(results):.1f}s")
+```
+
+## Comparing Models
+
+```python
+async def compare_models(suite_name: str, models: list[str]):
+    """Compare multiple models on the same benchmark."""
+    
+    all_results = {}
+    
+    for model in models:
+        print(f"\n{'='*50}")
+        print(f"Testing model: {model}")
+        print(f"{'='*50}")
+        
+        results = await run_benchmark(suite_name, model=model)
+        all_results[model] = results
+    
+    # Summary table
+    print(f"\n{'='*60}")
+    print(f"MODEL COMPARISON: {suite_name}")
+    print(f"{'='*60}")
+    print(f"{'Model':<25} {'Pass Rate':<12} {'Avg Time':<12}")
+    print(f"{'-'*60}")
+    
+    for model, results in all_results.items():
+        passed = sum(1 for r in results if r["passed"])
+        pass_rate = passed / len(results)
+        avg_time = sum(r["elapsed_seconds"] for r in results) / len(results)
+        
+        print(f"{model:<25} {pass_rate:>10.0%} {avg_time:>10.1f}s")
+    
+    return all_results
+
+# Compare models
+asyncio.run(compare_models("Linear Bench", [
+    "gpt-4o",
+    "gpt-4o-mini",
+    "claude-3-5-sonnet",
+    "claude-3-haiku"
+]))
+```
+
+## Saving Results
+
+```python
+import json
+from datetime import datetime
+
+# Save to JSON
+results = asyncio.run(run_benchmark("Slack Bench"))
+
+output = {
+    "benchmark": "Slack Bench",
+    "model": "gpt-4o",
+    "timestamp": datetime.now().isoformat(),
+    "summary": {
+        "total": len(results),
+        "passed": sum(1 for r in results if r["passed"]),
+        "pass_rate": sum(1 for r in results if r["passed"]) / len(results)
+    },
+    "results": results
+}
+
+with open("benchmark_results.json", "w") as f:
+    json.dump(output, f, indent=2)
+
+print(f"Results saved to benchmark_results.json")
+```
+
+## Parallel Execution
+
+For faster benchmarks, run tests in parallel:
+
+```python
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
+async def run_test(test, client, model):
+    """Run a single test."""
+    env = client.init_env(testId=test.id)
+    run = client.start_run(envId=env.environmentId, testId=test.id)
+    
+    try:
+        executor = PythonExecutorProxy(env.environmentId, client.base_url)
+        agent = Agent(
+            model=model,
+            tools=[create_openai_tool(executor)],
+            instructions="..."
+        )
+        await Runner.run(agent, test.prompt)
+        result = client.evaluate_run(runId=run.runId)
+        return {"test": test.name, "passed": result.passed}
+    finally:
+        client.delete_env(envId=env.environmentId)
+
+async def run_parallel_benchmark(suite_name: str, concurrency: int = 5):
+    """Run benchmark with parallel test execution."""
+    
+    suites = client.list_test_suites(name=suite_name)
+    suite = client.get_test_suite(suites.testSuites[0].id, expand=True)
+    
+    semaphore = asyncio.Semaphore(concurrency)
+    
+    async def run_with_semaphore(test):
+        async with semaphore:
+            return await run_test(test, client, "gpt-4o")
+    
+    tasks = [run_with_semaphore(test) for test in suite.tests]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    return results
+```
+
+## Visualizing Results
+
+```python
+import matplotlib.pyplot as plt
+
+def plot_results(results_by_model: dict):
+    """Create a bar chart of pass rates by model."""
+    
+    models = list(results_by_model.keys())
+    pass_rates = [
+        sum(1 for r in results if r["passed"]) / len(results)
+        for results in results_by_model.values()
+    ]
+    
+    plt.figure(figsize=(10, 6))
+    plt.bar(models, pass_rates, color=['#4CAF50', '#2196F3', '#FF9800', '#9C27B0'])
+    plt.ylabel('Pass Rate')
+    plt.title('Model Comparison on Linear Bench')
+    plt.ylim(0, 1)
+    
+    for i, rate in enumerate(pass_rates):
+        plt.text(i, rate + 0.02, f'{rate:.0%}', ha='center')
+    
+    plt.savefig('benchmark_comparison.png')
+    plt.show()
+```
+
+## HuggingFace Dataset
+
+Linear Bench is available as a HuggingFace dataset for reproducible research and model comparisons:
+
+<Card title="Linear Bench Mini" icon="hugging-face" href="https://huggingface.co/datasets/hubertmarek/linear-bench-mini">
+  40 agent evaluation tasks for Linear GraphQL API
+</Card>
+
+```python
+from datasets import load_dataset
+
+# Load the benchmark
+dataset = load_dataset("hubertmarek/linear-bench-mini")
+
+for example in dataset["train"]:
+    print(f"Prompt: {example['prompt']}")
+    print(f"Expected: {example['expected_state']}")
+```
+
+The dataset includes:
+- 40 diverse agent tasks (issue CRUD, labels, comments, workflows)
+- Pre-defined assertions in JSON format
+- Seed template references
+- Tags for filtering (`linear`, `graphql`, `agent-eval`)
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Services Overview" icon="plug" href="/services/overview">
+    Explore supported APIs
+  </Card>
+  <Card title="Self-Hosting" icon="server" href="/hosting/docker-setup">
+    Deploy your own instance
+  </Card>
+</CardGroup>
+

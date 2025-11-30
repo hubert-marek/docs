@@ -1,0 +1,134 @@
+---
+title: "LangChain"
+description: "Integrate Agent Diff with LangChain"
+---
+
+## Overview
+
+LangChain is a popular framework for building LLM applications. Agent Diff provides native tool support for LangChain agents.
+
+## Installation
+
+```bash
+pip install agent-diff langchain langchain-openai
+```
+
+## Basic Integration
+
+```python
+from agent_diff import AgentDiff, PythonExecutorProxy, create_langchain_tool
+from langchain_openai import ChatOpenAI
+from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain.prompts import ChatPromptTemplate
+
+# Initialize client and environment
+client = AgentDiff()
+env = client.init_env(
+    templateService="slack",
+    templateName="slack_default",
+    impersonateUserId="U01AGENBOT9"
+)
+
+# Create executor and LangChain tool
+python_executor = PythonExecutorProxy(env.environmentId, base_url=client.base_url)
+python_tool = create_langchain_tool(python_executor)
+
+# Set up LangChain agent
+llm = ChatOpenAI(model="gpt-4o")
+prompt = ChatPromptTemplate.from_messages([
+    ("system", """You are a Slack assistant. Use the execute_python tool to 
+    interact with Slack API at https://slack.com/api/*. 
+    Authentication is handled automatically."""),
+    ("human", "{input}"),
+    ("placeholder", "{agent_scratchpad}")
+])
+
+agent = create_openai_functions_agent(llm, [python_tool], prompt)
+agent_executor = AgentExecutor(agent=agent, tools=[python_tool], verbose=True)
+
+# Start run and execute
+run = client.start_run(envId=env.environmentId)
+result = agent_executor.invoke({"input": "Post 'Hello World!' to #general"})
+
+# Get diff
+diff = client.diff_run(runId=run.runId)
+print(diff.diff['inserts'])
+
+# Cleanup
+client.delete_env(envId=env.environmentId)
+```
+
+## With Bash Executor
+
+```python
+from agent_diff import BashExecutorProxy, create_langchain_tool
+
+bash_executor = BashExecutorProxy(env.environmentId, base_url=client.base_url)
+bash_tool = create_langchain_tool(bash_executor)
+
+# Use with your LangChain agent
+agent_executor = AgentExecutor(
+    agent=create_openai_functions_agent(llm, [bash_tool], prompt),
+    tools=[bash_tool],
+    verbose=True
+)
+```
+
+## Running Evaluations
+
+```python
+from agent_diff import AgentDiff, PythonExecutorProxy, create_langchain_tool
+from langchain_openai import ChatOpenAI
+from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain.prompts import ChatPromptTemplate
+
+client = AgentDiff()
+
+# Get test suite
+suites = client.list_test_suites(name="Slack Bench")
+suite = client.get_test_suite(suites.testSuites[0].id, expand=True)
+
+llm = ChatOpenAI(model="gpt-4o")
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "Use execute_python to interact with Slack at https://slack.com/api/*"),
+    ("human", "{input}"),
+    ("placeholder", "{agent_scratchpad}")
+])
+
+results = []
+
+for test in suite.tests:
+    env = client.init_env(testId=test.id)
+    run = client.start_run(envId=env.environmentId, testId=test.id)
+    
+    # Create tools and agent
+    executor = PythonExecutorProxy(env.environmentId, client.base_url)
+    tool = create_langchain_tool(executor)
+    agent = create_openai_functions_agent(llm, [tool], prompt)
+    agent_executor = AgentExecutor(agent=agent, tools=[tool])
+    
+    # Run
+    agent_executor.invoke({"input": test.prompt})
+    
+    # Evaluate
+    result = client.evaluate_run(runId=run.runId)
+    results.append({"test": test.name, "passed": result.passed})
+    
+    client.delete_env(envId=env.environmentId)
+
+# Print results
+for r in results:
+    print(f"{'✓' if r['passed'] else '✗'} {r['test']}")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="smolagents" icon="microchip" href="/sdks/python/smolagents">
+    Use with HuggingFace smolagents
+  </Card>
+  <Card title="Evaluations" icon="check" href="/evaluations/overview">
+    Run benchmarks on your agents
+  </Card>
+</CardGroup>
+

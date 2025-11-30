@@ -1,0 +1,183 @@
+---
+title: "OpenAI Agents SDK"
+description: "Integrate Agent Diff with OpenAI Agents SDK"
+---
+
+## Overview
+
+The OpenAI Agents SDK is a lightweight framework for building AI agents. Agent Diff provides native integration through code executor tools.
+
+## Installation
+
+```bash
+pip install agent-diff openai-agents
+```
+
+## Basic Integration
+
+```python
+from agent_diff import AgentDiff, PythonExecutorProxy, create_openai_tool
+from agents import Agent, Runner
+
+# Initialize client and environment
+client = AgentDiff()
+env = client.init_env(
+    templateService="slack",
+    templateName="slack_default",
+    impersonateUserId="U01AGENBOT9"
+)
+
+# Create executor and tool
+python_executor = PythonExecutorProxy(env.environmentId, base_url=client.base_url)
+python_tool = create_openai_tool(python_executor)
+
+# Create agent with the tool
+agent = Agent(
+    name="Slack Assistant",
+    instructions="""Use execute_python tool to interact with Slack API at 
+    https://slack.com/api/*. Authentication is handled automatically via proxy.
+    Leave a placeholder credential where you would add a real token.""",
+    tools=[python_tool]
+)
+
+# Start run and execute
+run = client.start_run(envId=env.environmentId)
+response = await Runner.run(agent, "Post 'Hello World!' to #general")
+
+# Get diff
+diff = client.diff_run(runId=run.runId)
+print(diff.diff['inserts'])
+
+# Cleanup
+client.delete_env(envId=env.environmentId)
+```
+
+## Using Bash Executor
+
+For agents that prefer curl commands:
+
+```python
+from agent_diff import BashExecutorProxy, create_openai_tool
+
+bash_executor = BashExecutorProxy(env.environmentId, base_url=client.base_url)
+bash_tool = create_openai_tool(bash_executor)
+
+agent = Agent(
+    name="Slack Assistant",
+    instructions="""Use execute_bash tool with curl to interact with Slack API 
+    at https://slack.com/api/*. Authentication is handled automatically.""",
+    tools=[bash_tool]
+)
+```
+
+## Running Evaluations
+
+```python
+from agent_diff import AgentDiff, PythonExecutorProxy, create_openai_tool
+from agents import Agent, Runner
+
+client = AgentDiff()
+
+# Get test suite
+suites = client.list_test_suites(name="Slack Bench")
+suite = client.get_test_suite(suites.testSuites[0].id, expand=True)
+
+results = []
+
+for test in suite.tests:
+    # Create environment for this test
+    env = client.init_env(testId=test.id)
+    
+    # Start run
+    run = client.start_run(envId=env.environmentId, testId=test.id)
+    
+    # Create executor and agent
+    executor = PythonExecutorProxy(env.environmentId, client.base_url)
+    agent = Agent(
+        name="Slack Assistant",
+        tools=[create_openai_tool(executor)],
+        instructions="Use execute_python to interact with Slack at https://slack.com/api/*"
+    )
+    
+    # Run agent with test prompt
+    await Runner.run(agent, test.prompt)
+    
+    # Evaluate
+    result = client.evaluate_run(runId=run.runId)
+    
+    results.append({
+        "test": test.name,
+        "passed": result.passed,
+        "score": result.score
+    })
+    
+    # Cleanup
+    client.delete_env(envId=env.environmentId)
+
+# Print results
+passed = sum(1 for r in results if r['passed'])
+print(f"\n Results: {passed}/{len(results)} tests passed")
+for r in results:
+    status = "✓" if r['passed'] else "✗"
+    print(f"  {status} {r['test']}")
+```
+
+## Multiple Tools
+
+You can combine Python and Bash executors:
+
+```python
+python_executor = PythonExecutorProxy(env.environmentId, client.base_url)
+bash_executor = BashExecutorProxy(env.environmentId, client.base_url)
+
+agent = Agent(
+    name="Multi-Tool Agent",
+    instructions="""You have two tools available:
+    - execute_python: For Python scripts using requests library
+    - execute_bash: For curl commands
+    
+    Use whichever is more appropriate for the task.
+    Both route to Slack API at https://slack.com/api/*""",
+    tools=[
+        create_openai_tool(python_executor),
+        create_openai_tool(bash_executor)
+    ]
+)
+```
+
+## Linear API Example
+
+```python
+env = client.init_env(
+    templateService="linear",
+    templateName="linear_expanded",
+    impersonateEmail="agent@example.com"
+)
+
+python_executor = PythonExecutorProxy(env.environmentId, client.base_url)
+
+agent = Agent(
+    name="Linear Assistant",
+    instructions="""Use execute_python to interact with Linear GraphQL API at 
+    https://api.linear.app/graphql. Authentication is automatic.""",
+    tools=[create_openai_tool(python_executor)]
+)
+
+run = client.start_run(envId=env.environmentId)
+await Runner.run(agent, "Create a new issue titled 'Fix login bug' in the Engineering team")
+
+diff = client.diff_run(runId=run.runId)
+print(diff.diff['inserts'])
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="LangChain" icon="link" href="/sdks/python/langchain">
+    Use Agent Diff with LangChain
+  </Card>
+  <Card title="smolagents" icon="microchip" href="/sdks/python/smolagents">
+    Use with HuggingFace smolagents
+  </Card>
+</CardGroup>
+

@@ -1,0 +1,100 @@
+---
+title: "Delete Environment"
+api: "DELETE /api/platform/env/{envId}"
+description: "Clean up an environment and its database schema"
+---
+
+## Request
+
+```bash
+DELETE /api/platform/env/{envId}
+```
+
+### Path Parameters
+
+<ParamField path="envId" type="string" required>
+  Environment ID from `initEnv`
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X DELETE https://api.agentdiff.dev/api/platform/env/abc123def456 \
+  -H "X-API-Key: ak_your_key"
+```
+
+## Response
+
+<ResponseField name="environmentId" type="string">
+  Environment identifier that was deleted
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Status: `"deleted"`
+</ResponseField>
+
+### Example Response
+
+```json
+{
+  "environmentId": "abc123def456",
+  "status": "deleted"
+}
+```
+
+## What Happens
+
+1. **Schema dropped**: PostgreSQL schema and all data deleted
+2. **Record updated**: Environment marked as deleted in database
+3. **Resources freed**: Pool slot recycled for reuse
+
+<Tip>
+Always delete environments when done to free up resources. Environments auto-expire after their TTL, but explicit deletion is faster.
+</Tip>
+
+## Errors
+
+| Error | Status | Description |
+|-------|--------|-------------|
+| `environment_not_found` | 404 | Environment doesn't exist |
+| `environment_already_deleted` | 400 | Environment was already deleted |
+
+## SDK Usage
+
+<CodeGroup>
+```python Python
+# Delete environment
+client.delete_env(envId=env.environmentId)
+print("Environment cleaned up")
+```
+
+```typescript TypeScript
+// Delete environment
+await client.deleteEnv(env.environmentId);
+console.log('Environment cleaned up');
+```
+</CodeGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Always clean up in finally blocks">
+```python
+env = client.init_env(...)
+try:
+    run = client.start_run(envId=env.environmentId)
+    # ... your test code ...
+finally:
+    client.delete_env(envId=env.environmentId)
+```
+  </Accordion>
+  
+  <Accordion title="Use context managers (Python)">
+```python
+# Coming soon: context manager support
+# with client.environment(...) as env:
+#     ...
+```
+  </Accordion>
+</AccordionGroup>
+

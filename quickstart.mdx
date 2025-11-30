@@ -1,80 +1,248 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Get Agent Diff running in 5 minutes"
 ---
 
-## Get started in three steps
+## Choose Your Setup
 
-Get your documentation site running locally and make your first customization.
-
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+<Tabs>
+  <Tab title="Hosted (Recommended)">
+    Use Agent Diff Cloud - no setup required:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    1. Sign up at [agentdiff.dev](https://agentdiff.dev)
+    2. Get your API key from the dashboard
+    3. Skip to [Step 2: Install the SDK](#step-2-install-the-sdk)
+  </Tab>
+  <Tab title="Self-Hosted">
+    Run Agent Diff locally with Docker
+  </Tab>
+</Tabs>
 
-### Step 2: Deploy your changes
+## Prerequisites (Self-Hosted Only)
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+- Docker & Docker Compose
+- Python 3.10+ or Node.js 18+
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+## Step 1: Start the Backend (Self-Hosted)
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+<CodeGroup>
+```bash Clone & Run
+git clone https://github.com/hubertpysklo/agent-diff.git
+cd agent-diff/ops
+docker-compose up
+```
+</CodeGroup>
 
-### Step 3: Go live
+<Check>
+Backend is now running at `http://localhost:8000`
+</Check>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+## Step 2: Install the SDK
 
-## Next steps
+<CodeGroup>
+```bash Python
+pip install agent-diff
+# or with uv
+uv add agent-diff
+```
 
-Now that you have your docs running, explore these key features:
+```bash TypeScript
+npm install agent-diff
+# or with pnpm
+pnpm add agent-diff
+```
+</CodeGroup>
+
+## Step 3: Create Your First Environment
+
+<CodeGroup>
+```python Python (Hosted)
+from agent_diff import AgentDiff
+
+# For hosted version
+client = AgentDiff(
+    base_url="https://api.agentdiff.dev",
+    api_key="ak_your_api_key"  # From dashboard
+)
+
+# Create isolated Slack environment
+env = client.init_env(
+    templateService="slack",
+    templateName="slack_default",
+    impersonateUserId="U01AGENBOT9",  # User your agent will act as
+    ttlSeconds=3600  # Auto-cleanup after 1 hour
+)
+
+print(f"Environment: {env.environmentId}")
+print(f"API URL: {env.environmentUrl}")
+```
+
+```python Python (Self-Hosted)
+from agent_diff import AgentDiff
+
+client = AgentDiff()  # Defaults to http://localhost:8000
+
+# Create isolated Slack environment
+env = client.init_env(
+    templateService="slack",
+    templateName="slack_default",
+    impersonateUserId="U01AGENBOT9",
+    ttlSeconds=3600
+)
+
+print(f"Environment: {env.environmentId}")
+print(f"API URL: {env.environmentUrl}")
+```
+
+```typescript TypeScript (Hosted)
+import { AgentDiff } from 'agent-diff';
+
+// For hosted version
+const client = new AgentDiff({
+  baseUrl: 'https://api.agentdiff.dev',
+  apiKey: 'ak_your_api_key'  // From dashboard
+});
+
+// Create isolated Slack environment
+const env = await client.initEnv({
+  templateService: 'slack',
+  templateName: 'slack_default',
+  impersonateUserId: 'U01AGENBOT9',
+  ttlSeconds: 3600
+});
+
+console.log(`Environment: ${env.environmentId}`);
+console.log(`API URL: ${env.environmentUrl}`);
+```
+
+```typescript TypeScript (Self-Hosted)
+import { AgentDiff } from 'agent-diff';
+
+const client = new AgentDiff();  // Defaults to http://localhost:8000
+
+const env = await client.initEnv({
+  templateService: 'slack',
+  templateName: 'slack_default',
+  impersonateUserId: 'U01AGENBOT9',
+  ttlSeconds: 3600
+});
+
+console.log(`Environment: ${env.environmentId}`);
+console.log(`API URL: ${env.environmentUrl}`);
+```
+</CodeGroup>
+
+## Step 4: Run Your Agent & Capture Diff
+
+<CodeGroup>
+```python Python
+from agent_diff import PythonExecutorProxy, create_openai_tool
+from agents import Agent, Runner
+
+# Start run (takes "before" snapshot)
+run = client.start_run(envId=env.environmentId)
+
+# Create code executor that intercepts API calls
+python_executor = PythonExecutorProxy(env.environmentId, base_url=client.base_url)
+python_tool = create_openai_tool(python_executor)
+
+# Your agent with the tool
+agent = Agent(
+    name="Slack Assistant",
+    instructions="""Use execute_python tool to interact with Slack API 
+    at https://slack.com/api/*. Authentication is handled automatically.""",
+    tools=[python_tool]
+)
+
+# Run the agent
+response = await Runner.run(agent, "Post 'Hello World!' to #general")
+
+# Get the diff (what changed)
+diff = client.diff_run(runId=run.runId)
+
+print("Inserts:", diff.diff['inserts'])  # New messages created
+print("Updates:", diff.diff['updates'])  # Records modified
+print("Deletes:", diff.diff['deletes'])  # Records removed
+
+# Cleanup
+client.delete_env(envId=env.environmentId)
+```
+
+```typescript TypeScript
+import { TypeScriptExecutorProxy, createVercelAITool } from 'agent-diff';
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+// Start run (takes "before" snapshot)
+const run = await client.startRun({ envId: env.environmentId });
+
+// Create code executor that intercepts API calls
+const executor = new TypeScriptExecutorProxy(env.environmentId, client.getBaseUrl());
+const tool = await createVercelAITool(executor);
+
+// Run AI with the tool
+const result = await generateText({
+  model: openai('gpt-4o'),
+  tools: { execute_typescript: tool },
+  prompt: "Post 'Hello World!' to Slack channel #general",
+  maxSteps: 5
+});
+
+// Get the diff (what changed)
+const diff = await client.diffRun({ runId: run.runId });
+
+console.log('Inserts:', diff.diff.inserts);  // New messages created
+console.log('Updates:', diff.diff.updates);  // Records modified  
+console.log('Deletes:', diff.diff.deletes);  // Records removed
+
+// Cleanup
+await client.deleteEnv(env.environmentId);
+```
+</CodeGroup>
+
+## Example Output
+
+```json
+{
+  "inserts": [
+    {
+      "__table__": "messages",
+      "message_id": "1732645891.000200",
+      "channel_id": "C01GENERAL99",
+      "user_id": "U01AGENBOT9",
+      "message_text": "Hello World!",
+      "created_at": "2025-11-26T15:31:31"
+    }
+  ],
+  "updates": [],
+  "deletes": []
+}
+```
+
+<Check>
+You've just run an agent against an isolated Slack replica and captured the exact changes it made!
+</Check>
+
+## What Just Happened?
+
+1. **Environment Created**: A fresh PostgreSQL schema was created with seed data (users, channels, messages)
+2. **Before Snapshot**: `start_run` captured the initial state
+3. **Agent Executed**: Your agent's API calls were intercepted and routed to the isolated environment
+4. **Diff Computed**: The system compared before/after states to produce a deterministic diff
+
+## Next Steps
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Core Concepts" icon="book" href="/concepts">
+    Understand environments, templates, seeds, and diffs in depth
+  </Card>
+  <Card title="Run Evaluations" icon="check" href="/evaluations/overview">
+    Add assertions and run benchmarks against your agent
+  </Card>
+  <Card title="Code Executors" icon="code" href="/executors/how-it-works">
+    Learn how API interception works under the hood
+  </Card>
+  <Card title="Explore Services" icon="plug" href="/services/overview">
+    See all supported APIs and their methods
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

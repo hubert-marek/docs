@@ -1,33 +1,160 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: "API Reference"
+description: "Complete REST API documentation for Agent Diff"
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+## Base URLs
 
-## Welcome
-
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
-
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+<Tabs>
+  <Tab title="Hosted">
+    ```
+    https://api.agentdiff.dev
+    ```
+  </Tab>
+  <Tab title="Self-Hosted">
+    ```
+    http://localhost:8000
+    ```
+  </Tab>
+</Tabs>
 
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+All API requests require authentication via API key header:
+
+```bash
+curl -H "X-API-Key: ak_your_api_key" \
+  https://api.agentdiff.dev/api/platform/health
+```
+
+<Note>
+Get your API key from the [dashboard](https://agentdiff.dev/dashboard) (hosted) or run `make reissue-key` (self-hosted).
+</Note>
+
+## API Structure
+
+The API is organized into several groups:
+
+<CardGroup cols={2}>
+  <Card title="Platform Endpoints" icon="server">
+    Core functionality: environments, runs, diffs
+    - `/api/platform/initEnv`
+    - `/api/platform/startRun`
+    - `/api/platform/evaluateRun`
+    - `/api/platform/results/{runId}`
+  </Card>
+  <Card title="Template Endpoints" icon="copy">
+    Manage environment templates
+    - `/api/platform/templates`
+    - `/api/platform/templates/{id}`
+  </Card>
+  <Card title="Test Suite Endpoints" icon="list-check">
+    Manage test suites and tests
+    - `/api/platform/testSuites`
+    - `/api/platform/testSuites/{id}`
+  </Card>
+  <Card title="Service APIs" icon="plug">
+    Isolated service replicas
+    - `/api/env/{id}/services/slack/*`
+    - `/api/env/{id}/services/linear/*`
+  </Card>
+</CardGroup>
+
+## Response Format
+
+### Success Response
 
 ```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
+{
+  "environmentId": "abc123",
+  "status": "ready",
+  "data": {...}
+}
+```
+
+### Error Response
+
+```json
+{
+  "ok": false,
+  "error": "error_code",
+  "detail": "Human-readable error message"
+}
+```
+
+## Common Error Codes
+
+| Code | Status | Description |
+|------|--------|-------------|
+| `not_authed` | 401 | Missing or invalid API key |
+| `invalid_environment_path` | 400 | Malformed environment ID |
+| `environment_not_found` | 404 | Environment doesn't exist or expired |
+| `run_not_found` | 404 | Test run doesn't exist |
+| `template_not_found` | 404 | Template doesn't exist |
+| `internal_error` | 500 | Server error |
+
+## Rate Limits
+
+<Tabs>
+  <Tab title="Hosted">
+    | Plan | Requests/hour | Concurrent Environments |
+    |------|---------------|------------------------|
+    | Free | 100 | 5 |
+    | Pro | 1,000 | 50 |
+    | Enterprise | Unlimited | Unlimited |
+  </Tab>
+  <Tab title="Self-Hosted">
+    No rate limits (limited by your infrastructure)
+  </Tab>
+</Tabs>
+
+## SDKs
+
+We recommend using our SDKs instead of calling the API directly:
+
+<CardGroup cols={2}>
+  <Card title="Python SDK" icon="python" href="/sdks/python/installation">
+    `pip install agent-diff`
+  </Card>
+  <Card title="TypeScript SDK" icon="js" href="/sdks/typescript/installation">
+    `npm install agent-diff`
+  </Card>
+</CardGroup>
+
+## Quick Example
+
+```bash
+# 1. Create environment
+curl -X POST https://api.agentdiff.dev/api/platform/initEnv \
+  -H "X-API-Key: ak_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "templateService": "slack",
+    "templateName": "slack_default",
+    "impersonateUserId": "U01AGENBOT9"
+  }'
+
+# Response: {"environmentId": "abc123", "environmentUrl": "..."}
+
+# 2. Start run
+curl -X POST https://api.agentdiff.dev/api/platform/startRun \
+  -H "X-API-Key: ak_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"envId": "abc123"}'
+
+# Response: {"runId": "run-456", "status": "running"}
+
+# 3. Make API calls to isolated environment
+curl -X POST https://api.agentdiff.dev/api/env/abc123/services/slack/chat.postMessage \
+  -H "X-API-Key: ak_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"channel": "C01GENERAL99", "text": "Hello!"}'
+
+# 4. Get diff
+curl -X POST https://api.agentdiff.dev/api/platform/diffRun \
+  -H "X-API-Key: ak_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"runId": "run-456"}'
+
+# Response: {"diff": {"inserts": [...], "updates": [...], "deletes": []}}
 ```

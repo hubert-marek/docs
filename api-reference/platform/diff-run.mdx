@@ -1,0 +1,159 @@
+---
+title: "Diff Run"
+api: "POST /api/platform/diffRun"
+description: "Complete a run and get the computed diff"
+---
+
+## Request
+
+```bash
+POST /api/platform/diffRun
+```
+
+### Body Parameters
+
+<ParamField body="runId" type="string" required>
+  Run ID from `startRun`
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://api.agentdiff.dev/api/platform/diffRun \
+  -H "X-API-Key: ak_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "runId": "run-xyz789"
+  }'
+```
+
+## Response
+
+<ResponseField name="runId" type="string">
+  Run identifier
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Run status: `"completed"`
+</ResponseField>
+
+<ResponseField name="diff" type="object">
+  Computed diff with `inserts`, `updates`, and `deletes`
+</ResponseField>
+
+### Example Response
+
+```json
+{
+  "runId": "run-xyz789",
+  "status": "completed",
+  "diff": {
+    "inserts": [
+      {
+        "__table__": "messages",
+        "message_id": "1732645891.000200",
+        "channel_id": "C01GENERAL99",
+        "user_id": "U01AGENBOT9",
+        "message_text": "Hello World!",
+        "created_at": "2025-11-26T15:31:31"
+      }
+    ],
+    "updates": [
+      {
+        "__table__": "channels",
+        "before": {
+          "last_message_at": null
+        },
+        "after": {
+          "last_message_at": "2025-11-26T15:31:31"
+        }
+      }
+    ],
+    "deletes": []
+  }
+}
+```
+
+## Diff Structure
+
+### Inserts
+
+New records created during the run:
+
+```json
+{
+  "__table__": "messages",
+  "message_id": "...",
+  "channel_id": "...",
+  "message_text": "Hello!"
+}
+```
+
+### Updates
+
+Modified records with before/after values:
+
+```json
+{
+  "__table__": "channels",
+  "before": { "message_count": 5 },
+  "after": { "message_count": 6 }
+}
+```
+
+### Deletes
+
+Records removed during the run:
+
+```json
+{
+  "__table__": "messages",
+  "message_id": "1234567890.000100"
+}
+```
+
+## What Happens
+
+1. **After snapshot**: Current database state is captured
+2. **Diff computed**: Before/after states compared
+3. **Results returned**: Full diff returned immediately
+4. **Replication stopped**: WAL capture ends
+
+<Note>
+Use this when you want the raw diff without running assertions. For evaluation with assertions, use `evaluateRun` instead.
+</Note>
+
+## Errors
+
+| Error | Status | Description |
+|-------|--------|-------------|
+| `run_not_found` | 404 | Run doesn't exist |
+| `run_already_completed` | 400 | Run already completed |
+
+## SDK Usage
+
+<CodeGroup>
+```python Python
+diff = client.diff_run(runId=run.runId)
+
+print(f"Inserts: {len(diff.diff['inserts'])}")
+print(f"Updates: {len(diff.diff['updates'])}")
+print(f"Deletes: {len(diff.diff['deletes'])}")
+
+for insert in diff.diff['inserts']:
+    print(f"  + [{insert['__table__']}] {insert}")
+```
+
+```typescript TypeScript
+const diff = await client.diffRun({ runId: run.runId });
+
+console.log(`Inserts: ${diff.diff.inserts.length}`);
+console.log(`Updates: ${diff.diff.updates.length}`);
+console.log(`Deletes: ${diff.diff.deletes.length}`);
+
+diff.diff.inserts.forEach(insert => {
+  console.log(`  + [${insert.__table__}]`, insert);
+});
+```
+</CodeGroup>
+

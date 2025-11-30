@@ -1,0 +1,93 @@
+---
+title: "Supported Services"
+description: "API replicas available in Agent Diff"
+---
+
+## Overview
+
+Agent Diff provides high-fidelity replicas of popular APIs. Each replica:
+
+- **Behaves like the real API** - Same endpoints, same response formats
+- **Runs in isolation** - Each test environment has its own data
+- **Captures all changes** - Full audit trail via database diff
+
+## Available Services
+
+<CardGroup cols={2}>
+  <Card title="Slack" icon="slack" href="/services/slack/overview">
+    Web API for messaging, channels, reactions, and users
+  </Card>
+  <Card title="Linear" icon="square-kanban" href="/services/linear/overview">
+    GraphQL API for issues, teams, projects, and workflows
+  </Card>
+</CardGroup>
+
+## Service URLs
+
+When you create an environment, each service gets a unique URL:
+
+```python
+env = client.init_env(templateService="slack", templateName="slack_default")
+
+# Service URL format:
+# http://localhost:8000/api/env/{env_id}/services/{service}
+
+print(env.environmentUrl)
+# Output: http://localhost:8000/api/env/abc123/services/slack
+```
+
+## URL Transformation
+
+Code executors automatically transform production URLs:
+
+| Production URL | Agent Diff URL |
+|---------------|----------------|
+| `https://slack.com/api/*` | `/api/env/{id}/services/slack/*` |
+| `https://api.slack.com/api/*` | `/api/env/{id}/services/slack/*` |
+| `https://api.linear.app/*` | `/api/env/{id}/services/linear/*` |
+
+## Service Comparison
+
+| Feature | Slack | Linear |
+|---------|-------|--------|
+| Protocol | REST | GraphQL |
+| Authentication | OAuth/API Key (mocked) | API Key (mocked) |
+| Real-time | ❌ | ❌ |
+| Webhooks | ❌ | ❌ |
+
+## Coming Soon
+
+We're working on adding more services:
+
+- **GitHub** - Issues, PRs, repos
+- **Jira** - Issues, projects, workflows
+- **Notion** - Pages, databases, blocks
+- **Asana** - Tasks, projects, teams
+
+<Note>
+Want a specific service? [Request it on GitHub →](https://github.com/hubertpysklo/agent-diff/issues)
+</Note>
+
+## Custom Services
+
+You can add your own service replicas by:
+
+1. Creating a database schema (seed file)
+2. Implementing API endpoints that match the real service
+3. Registering the service with Agent Diff
+
+See the Slack and Linear implementations for reference:
+- `backend/src/services/slack/`
+- `backend/src/services/linear/`
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Slack API" icon="slack" href="/services/slack/overview">
+    Explore Slack integration
+  </Card>
+  <Card title="Linear API" icon="square-kanban" href="/services/linear/overview">
+    Explore Linear integration
+  </Card>
+</CardGroup>
+

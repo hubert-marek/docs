@@ -1,0 +1,147 @@
+---
+title: "Get Test Suite"
+api: "GET /api/platform/testSuites/{suiteId}"
+description: "Get details of a specific test suite"
+---
+
+## Request
+
+```bash
+GET /api/platform/testSuites/{suiteId}
+```
+
+### Path Parameters
+
+<ParamField path="suiteId" type="string" required>
+  Test suite ID
+</ParamField>
+
+### Query Parameters
+
+<ParamField query="expand" type="boolean" default="false">
+  Include full test details
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.agentdiff.dev/api/platform/testSuites/suite-123?expand=true" \
+  -H "X-API-Key: ak_your_key"
+```
+
+## Response
+
+<ResponseField name="id" type="string">
+  Suite identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Suite name
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Suite description
+</ResponseField>
+
+<ResponseField name="tests" type="array">
+  List of tests (when `expand=true`)
+</ResponseField>
+
+### Example Response (expand=true)
+
+```json
+{
+  "id": "suite-123",
+  "name": "Slack Bench",
+  "description": "Core Slack agent capabilities",
+  "templateService": "slack",
+  "templateName": "slack_bench_default",
+  "impersonateUserId": "U01AGENBOT9",
+  "tests": [
+    {
+      "id": "test-001",
+      "name": "Post message to channel",
+      "prompt": "Post 'Hello World!' to #general",
+      "expectedOutput": {
+        "assertions": [
+          {
+            "diff_type": "added",
+            "entity": "messages",
+            "where": {
+              "channel_id": {"eq": "C01GENERAL99"},
+              "message_text": {"contains": "Hello"}
+            },
+            "expected_count": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "test-002",
+      "name": "Add reaction",
+      "prompt": "Add a thumbs up reaction to the latest message in #general",
+      "expectedOutput": {
+        "assertions": [
+          {
+            "diff_type": "added",
+            "entity": "reactions",
+            "where": {
+              "reaction_name": {"eq": "thumbsup"}
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+### Example Response (expand=false)
+
+```json
+{
+  "id": "suite-123",
+  "name": "Slack Bench",
+  "description": "Core Slack agent capabilities",
+  "testCount": 20
+}
+```
+
+## Test Object
+
+Each test includes:
+
+| Field | Description |
+|-------|-------------|
+| `id` | Unique test identifier |
+| `name` | Test name |
+| `prompt` | Prompt to give to the agent |
+| `expectedOutput` | Assertions in JSON DSL |
+
+## SDK Usage
+
+<CodeGroup>
+```python Python
+# Get suite without tests
+suite = client.get_test_suite("suite-123")
+print(f"{suite.name}: {suite.testCount} tests")
+
+# Get suite with full test details
+suite = client.get_test_suite("suite-123", expand=True)
+for test in suite.tests:
+    print(f"  - {test.name}: {test.prompt}")
+```
+
+```typescript TypeScript
+// Get suite without tests
+const suite = await client.getTestSuite('suite-123');
+console.log(`${suite.name}: ${suite.testCount} tests`);
+
+// Get suite with full test details
+const fullSuite = await client.getTestSuite('suite-123', { expand: true });
+fullSuite.tests.forEach(test => {
+  console.log(`  - ${test.name}: ${test.prompt}`);
+});
+```
+</CodeGroup>
+

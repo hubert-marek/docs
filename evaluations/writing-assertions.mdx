@@ -1,0 +1,319 @@
+---
+title: "Writing Assertions"
+description: "Define expected outcomes for your agent tests"
+---
+
+## Assertion Basics
+
+Assertions describe what database changes you expect after the agent runs. They're written in a JSON DSL that gets evaluated against the computed diff.
+
+## Anatomy of an Assertion
+
+```json
+{
+  "diff_type": "added",        // Type of change: added, changed, removed
+  "entity": "messages",        // Database table name
+  "where": {                   // Conditions to match
+    "channel_id": {"eq": "C01GENERAL99"},
+    "message_text": {"contains": "hello"}
+  },
+  "expected_count": 1          // How many records should match
+}
+```
+
+## Diff Types
+
+### `added` - New Records
+
+Check that new rows were inserted:
+
+```json
+{
+  "diff_type": "added",
+  "entity": "messages",
+  "where": {
+    "message_text": {"contains": "Hello"}
+  },
+  "expected_count": 1
+}
+```
+
+### `changed` - Modified Records
+
+Check that existing rows were updated:
+
+```json
+{
+  "diff_type": "changed",
+  "entity": "issues",
+  "where": {
+    "id": {"eq": "issue-123"}
+  },
+  "expected_changes": {
+    "status": {"to": {"eq": "Done"}}
+  }
+}
+```
+
+### `removed` - Deleted Records
+
+Check that rows were deleted:
+
+```json
+{
+  "diff_type": "removed",
+  "entity": "messages",
+  "where": {
+    "message_id": {"eq": "1234567890.000100"}
+  },
+  "expected_count": 1
+}
+```
+
+## Predicates
+
+### Equality
+
+```json
+{"field": {"eq": "value"}}      // Equals
+{"field": {"neq": "value"}}     // Not equals
+```
+
+### Comparison
+
+```json
+{"priority": {"gt": 2}}         // Greater than
+{"priority": {"gte": 2}}        // Greater than or equal
+{"priority": {"lt": 5}}         // Less than
+{"priority": {"lte": 5}}        // Less than or equal
+```
+
+### String Matching
+
+```json
+{"text": {"contains": "hello"}}       // Contains substring
+{"text": {"not_contains": "error"}}   // Does not contain
+{"text": {"starts_with": "Hello"}}    // Starts with
+{"text": {"ends_with": "!"}}          // Ends with
+```
+
+### Null Checking
+
+```json
+{"assignee_id": {"is_null": true}}     // Is NULL
+{"assignee_id": {"not_null": true}}    // Is not NULL
+```
+
+### Set Membership
+
+```json
+{"status": {"in": ["Done", "Closed"]}}       // In set
+{"status": {"not_in": ["Backlog", "Triage"]}} // Not in set
+```
+
+### Array Operations
+
+```json
+{"labels": {"has_any": ["bug", "urgent"]}}   // Has any of these
+{"labels": {"has_all": ["bug", "frontend"]}} // Has all of these
+```
+
+## Combining Predicates
+
+### AND Logic
+
+All conditions must match:
+
+```json
+{
+  "where": {
+    "channel_id": {"eq": "C01GENERAL99"},
+    "message_text": {"contains": "hello"},
+    "user_id": {"eq": "U01AGENBOT9"}
+  }
+}
+```
+
+### Explicit AND/OR
+
+```json
+{
+  "where": {
+    "and": [
+      {"status": {"neq": "archived"}},
+      {"or": [
+        {"priority": {"eq": 1}},
+        {"priority": {"eq": 2}}
+      ]}
+    ]
+  }
+}
+```
+
+## Expected Count
+
+### Exact Count
+
+```json
+{"expected_count": 1}           // Exactly 1 record
+{"expected_count": 3}           // Exactly 3 records
+```
+
+### Bounded Count
+
+```json
+{"expected_count": {"min": 1}}           // At least 1
+{"expected_count": {"max": 5}}           // At most 5
+{"expected_count": {"min": 1, "max": 5}} // Between 1 and 5
+```
+
+## Expected Changes (for `changed` diff_type)
+
+### Check New Value
+
+```json
+{
+  "diff_type": "changed",
+  "entity": "issues",
+  "expected_changes": {
+    "status": {"to": {"eq": "Done"}}
+  }
+}
+```
+
+### Check Old and New Value
+
+```json
+{
+  "diff_type": "changed",
+  "entity": "issues",
+  "expected_changes": {
+    "status": {
+      "from": {"eq": "In Progress"},
+      "to": {"eq": "Done"}
+    }
+  }
+}
+```
+
+## Complete Examples
+
+### Slack: Post Message to Channel
+
+```json
+{
+  "assertions": [{
+    "diff_type": "added",
+    "entity": "messages",
+    "where": {
+      "channel_id": {"eq": "C01GENERAL99"},
+      "message_text": {"contains": "Hello"},
+      "user_id": {"eq": "U01AGENBOT9"}
+    },
+    "expected_count": 1
+  }]
+}
+```
+
+### Slack: Add Reaction
+
+```json
+{
+  "assertions": [{
+    "diff_type": "added",
+    "entity": "reactions",
+    "where": {
+      "message_id": {"eq": "1234567890.000100"},
+      "reaction_name": {"eq": "thumbsup"}
+    },
+    "expected_count": 1
+  }]
+}
+```
+
+### Linear: Create Issue
+
+```json
+{
+  "assertions": [{
+    "diff_type": "added",
+    "entity": "issues",
+    "where": {
+      "title": {"eq": "Fix login bug"},
+      "team_id": {"eq": "team-engineering"}
+    },
+    "expected_count": 1
+  }]
+}
+```
+
+### Linear: Update Issue Priority
+
+```json
+{
+  "assertions": [{
+    "diff_type": "changed",
+    "entity": "issues",
+    "where": {
+      "title": {"contains": "login bug"}
+    },
+    "expected_changes": {
+      "priority": {"to": {"eq": 1}}
+    }
+  }]
+}
+```
+
+### Multiple Assertions
+
+```json
+{
+  "assertions": [
+    {
+      "diff_type": "added",
+      "entity": "issues",
+      "where": {"title": {"contains": "Bug"}},
+      "expected_count": 1
+    },
+    {
+      "diff_type": "added",
+      "entity": "comments",
+      "where": {"body": {"contains": "investigating"}},
+      "expected_count": 1
+    }
+  ]
+}
+```
+
+## Strict Mode
+
+With `strict: true`, the evaluation fails if there are changes beyond what's asserted:
+
+```json
+{
+  "strict": true,
+  "assertions": [{
+    "diff_type": "changed",
+    "entity": "issues",
+    "expected_changes": {
+      "status": {"to": {"eq": "Done"}}
+    }
+  }]
+}
+```
+
+<Note>
+If `strict: true` and the agent also changed `priority`, the assertion fails even if `status` was correctly changed.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="DSL Reference" icon="code" href="/evaluations/dsl-reference">
+    Complete operator reference
+  </Card>
+  <Card title="Run Benchmarks" icon="chart-line" href="/evaluations/benchmarks">
+    Run evaluations at scale
+  </Card>
+</CardGroup>
+

@@ -1,0 +1,128 @@
+---
+title: "smolagents"
+description: "Integrate Agent Diff with HuggingFace smolagents"
+---
+
+## Overview
+
+[smolagents](https://github.com/huggingface/smolagents) is HuggingFace's lightweight agent framework. Agent Diff provides native tool support.
+
+## Installation
+
+```bash
+pip install agent-diff smolagents
+```
+
+## Basic Integration
+
+```python
+from agent_diff import AgentDiff, PythonExecutorProxy, create_smolagents_tool
+from smolagents import CodeAgent, HfApiModel
+
+# Initialize client and environment
+client = AgentDiff()
+env = client.init_env(
+    templateService="slack",
+    templateName="slack_default",
+    impersonateUserId="U01AGENBOT9"
+)
+
+# Create executor and smolagents tool
+python_executor = PythonExecutorProxy(env.environmentId, base_url=client.base_url)
+python_tool = create_smolagents_tool(python_executor)
+
+# Create agent
+model = HfApiModel("Qwen/Qwen2.5-72B-Instruct")
+agent = CodeAgent(
+    tools=[python_tool],
+    model=model,
+    system_prompt="""You are a Slack assistant. Use the execute_python tool to 
+    interact with Slack API at https://slack.com/api/*. 
+    Authentication is handled automatically."""
+)
+
+# Start run and execute
+run = client.start_run(envId=env.environmentId)
+result = agent.run("Post 'Hello World!' to #general")
+
+# Get diff
+diff = client.diff_run(runId=run.runId)
+print(diff.diff['inserts'])
+
+# Cleanup
+client.delete_env(envId=env.environmentId)
+```
+
+## With Different Models
+
+smolagents supports multiple model backends:
+
+```python
+from smolagents import HfApiModel, OpenAIServerModel
+
+# HuggingFace Inference API
+hf_model = HfApiModel("Qwen/Qwen2.5-72B-Instruct")
+
+# OpenAI-compatible APIs
+openai_model = OpenAIServerModel(
+    model_id="gpt-4o",
+    api_key="your-api-key"
+)
+
+# Use with agent
+agent = CodeAgent(tools=[python_tool], model=openai_model)
+```
+
+## Running Evaluations
+
+```python
+from agent_diff import AgentDiff, PythonExecutorProxy, create_smolagents_tool
+from smolagents import CodeAgent, HfApiModel
+
+client = AgentDiff()
+model = HfApiModel("Qwen/Qwen2.5-72B-Instruct")
+
+# Get test suite
+suites = client.list_test_suites(name="Slack Bench")
+suite = client.get_test_suite(suites.testSuites[0].id, expand=True)
+
+results = []
+
+for test in suite.tests:
+    env = client.init_env(testId=test.id)
+    run = client.start_run(envId=env.environmentId, testId=test.id)
+    
+    # Create tool and agent
+    executor = PythonExecutorProxy(env.environmentId, client.base_url)
+    tool = create_smolagents_tool(executor)
+    agent = CodeAgent(
+        tools=[tool],
+        model=model,
+        system_prompt="Use execute_python to interact with Slack at https://slack.com/api/*"
+    )
+    
+    # Run
+    agent.run(test.prompt)
+    
+    # Evaluate
+    result = client.evaluate_run(runId=run.runId)
+    results.append({"test": test.name, "passed": result.passed})
+    
+    client.delete_env(envId=env.environmentId)
+
+# Print results
+passed = sum(1 for r in results if r['passed'])
+print(f"\n{passed}/{len(results)} tests passed")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Code Executors" icon="code" href="/executors/how-it-works">
+    Learn how API interception works
+  </Card>
+  <Card title="Evaluations" icon="check" href="/evaluations/overview">
+    Run benchmarks on your agents
+  </Card>
+</CardGroup>
+

@@ -1,0 +1,421 @@
+---
+title: "Linear GraphQL API"
+description: "Supported Linear queries and mutations"
+---
+
+## Overview
+
+Agent Diff implements a subset of Linear's GraphQL API focused on the most common agent operations.
+
+## Queries
+
+### teams
+
+List all teams.
+
+```graphql
+query {
+  teams {
+    nodes {
+      id
+      name
+      key
+      description
+      issueCount
+    }
+  }
+}
+```
+
+### team
+
+Get a specific team.
+
+```graphql
+query {
+  team(id: "team-uuid") {
+    id
+    name
+    key
+    issues {
+      nodes {
+        id
+        title
+        state { name }
+      }
+    }
+  }
+}
+```
+
+### issues
+
+List issues with filtering.
+
+```graphql
+query {
+  issues(
+    filter: {
+      team: { id: { eq: "team-uuid" } }
+      state: { name: { eq: "In Progress" } }
+    }
+    first: 10
+  ) {
+    nodes {
+      id
+      title
+      identifier
+      priority
+      state { name }
+      assignee { name }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+```
+
+### issue
+
+Get a specific issue.
+
+```graphql
+query {
+  issue(id: "issue-uuid") {
+    id
+    title
+    description
+    priority
+    state { name }
+    team { name }
+    assignee { name }
+    labels {
+      nodes { name color }
+    }
+    comments {
+      nodes {
+        body
+        user { name }
+      }
+    }
+  }
+}
+```
+
+### users
+
+List all users.
+
+```graphql
+query {
+  users {
+    nodes {
+      id
+      name
+      email
+      displayName
+    }
+  }
+}
+```
+
+### viewer
+
+Get the current authenticated user.
+
+```graphql
+query {
+  viewer {
+    id
+    name
+    email
+  }
+}
+```
+
+### workflowStates
+
+List workflow states for a team.
+
+```graphql
+query {
+  workflowStates(
+    filter: { team: { id: { eq: "team-uuid" } } }
+  ) {
+    nodes {
+      id
+      name
+      type
+      position
+    }
+  }
+}
+```
+
+### projects
+
+List projects.
+
+```graphql
+query {
+  projects {
+    nodes {
+      id
+      name
+      state
+      progress
+      teams {
+        nodes { name }
+      }
+    }
+  }
+}
+```
+
+### issueLabels
+
+List labels.
+
+```graphql
+query {
+  issueLabels {
+    nodes {
+      id
+      name
+      color
+    }
+  }
+}
+```
+
+---
+
+## Mutations
+
+### issueCreate
+
+Create a new issue.
+
+```graphql
+mutation {
+  issueCreate(input: {
+    title: "Fix login bug"
+    teamId: "team-uuid"
+    description: "Users can't log in with SSO"
+    priority: 1
+    stateId: "state-uuid"
+    assigneeId: "user-uuid"
+    labelIds: ["label-uuid"]
+  }) {
+    success
+    issue {
+      id
+      identifier
+      title
+      url
+    }
+  }
+}
+```
+
+### issueUpdate
+
+Update an existing issue.
+
+```graphql
+mutation {
+  issueUpdate(
+    id: "issue-uuid"
+    input: {
+      title: "Updated title"
+      priority: 2
+      stateId: "new-state-uuid"
+      assigneeId: "new-assignee-uuid"
+    }
+  ) {
+    success
+    issue {
+      id
+      title
+      state { name }
+    }
+  }
+}
+```
+
+### issueDelete
+
+Delete an issue.
+
+```graphql
+mutation {
+  issueDelete(id: "issue-uuid") {
+    success
+  }
+}
+```
+
+### commentCreate
+
+Add a comment to an issue.
+
+```graphql
+mutation {
+  commentCreate(input: {
+    issueId: "issue-uuid"
+    body: "I'm looking into this now."
+  }) {
+    success
+    comment {
+      id
+      body
+      user { name }
+    }
+  }
+}
+```
+
+### issueLabelCreate
+
+Create a new label.
+
+```graphql
+mutation {
+  issueLabelCreate(input: {
+    name: "urgent"
+    color: "#FF0000"
+    teamId: "team-uuid"
+  }) {
+    success
+    issueLabel {
+      id
+      name
+      color
+    }
+  }
+}
+```
+
+### issueAddLabel
+
+Add a label to an issue.
+
+```graphql
+mutation {
+  issueAddLabel(
+    id: "issue-uuid"
+    labelId: "label-uuid"
+  ) {
+    success
+    issue {
+      labels { nodes { name } }
+    }
+  }
+}
+```
+
+### issueRemoveLabel
+
+Remove a label from an issue.
+
+```graphql
+mutation {
+  issueRemoveLabel(
+    id: "issue-uuid"
+    labelId: "label-uuid"
+  ) {
+    success
+  }
+}
+```
+
+### projectCreate
+
+Create a new project.
+
+```graphql
+mutation {
+  projectCreate(input: {
+    name: "Q1 Roadmap"
+    teamIds: ["team-uuid"]
+    description: "Q1 2025 goals"
+  }) {
+    success
+    project {
+      id
+      name
+    }
+  }
+}
+```
+
+---
+
+## Filtering
+
+Issues and other entities support filtering:
+
+```graphql
+query {
+  issues(filter: {
+    and: [
+      { team: { id: { eq: "team-uuid" } } }
+      { state: { type: { neq: "completed" } } }
+      { or: [
+        { priority: { eq: 1 } }
+        { priority: { eq: 2 } }
+      ]}
+    ]
+  }) {
+    nodes { id title }
+  }
+}
+```
+
+### Filter Operators
+
+| Operator | Description |
+|----------|-------------|
+| `eq` | Equal |
+| `neq` | Not equal |
+| `in` | In array |
+| `nin` | Not in array |
+| `contains` | String contains |
+| `startsWith` | String starts with |
+
+---
+
+## Pagination
+
+Use cursor-based pagination:
+
+```graphql
+query {
+  issues(first: 10, after: "cursor-string") {
+    nodes {
+      id
+      title
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+  }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Seed Files" icon="database" href="/services/linear/seeds">
+    Create custom Linear data
+  </Card>
+  <Card title="Slack API" icon="slack" href="/services/slack/overview">
+    Explore Slack integration
+  </Card>
+</CardGroup>
+

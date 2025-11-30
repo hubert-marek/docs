@@ -1,0 +1,291 @@
+---
+title: "DSL Reference"
+description: "Complete reference for the evaluation DSL"
+---
+
+## Schema
+
+The evaluation DSL is a JSON format for defining expected database state changes.
+
+```json
+{
+  "strict": false,
+  "assertions": [
+    {
+      "diff_type": "added|changed|removed|unchanged",
+      "entity": "table_name",
+      "where": { /* predicates */ },
+      "expected_count": 1,
+      "expected_changes": { /* for 'changed' type */ }
+    }
+  ]
+}
+```
+
+## Top-Level Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `strict` | boolean | No | Fail if extra changes exist (default: false) |
+| `assertions` | array | Yes | List of assertions to evaluate |
+
+## Assertion Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `diff_type` | string | Yes | Type of change to check |
+| `entity` | string | Yes | Database table name |
+| `where` | object | No | Conditions to match records |
+| `expected_count` | number/object | No | How many records should match |
+| `expected_changes` | object | No | Field changes to verify (for `changed`) |
+
+## Diff Types
+
+| Type | Description |
+|------|-------------|
+| `added` | New records were inserted |
+| `changed` | Existing records were updated |
+| `removed` | Records were deleted |
+| `unchanged` | Records exist and weren't modified |
+
+## Predicate Operators
+
+### Equality Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `eq` | Equal to | `{"status": {"eq": "Done"}}` |
+| `neq` | Not equal to | `{"status": {"neq": "Archived"}}` |
+
+### Comparison Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `gt` | Greater than | `{"priority": {"gt": 2}}` |
+| `gte` | Greater than or equal | `{"priority": {"gte": 2}}` |
+| `lt` | Less than | `{"priority": {"lt": 5}}` |
+| `lte` | Less than or equal | `{"priority": {"lte": 5}}` |
+
+### String Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `contains` | Contains substring (case-sensitive) | `{"text": {"contains": "bug"}}` |
+| `not_contains` | Does not contain substring | `{"text": {"not_contains": "error"}}` |
+| `starts_with` | Starts with prefix | `{"title": {"starts_with": "Fix"}}` |
+| `ends_with` | Ends with suffix | `{"name": {"ends_with": ".js"}}` |
+
+### Null Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `is_null` | Value is NULL | `{"assignee": {"is_null": true}}` |
+| `not_null` | Value is not NULL | `{"assignee": {"not_null": true}}` |
+
+### Set Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `in` | Value is in set | `{"status": {"in": ["Done", "Closed"]}}` |
+| `not_in` | Value is not in set | `{"status": {"not_in": ["Backlog"]}}` |
+
+### Array Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `has_any` | Array contains any of | `{"labels": {"has_any": ["bug", "urgent"]}}` |
+| `has_all` | Array contains all of | `{"labels": {"has_all": ["bug", "p1"]}}` |
+
+## Logical Combinators
+
+### AND (implicit)
+
+Multiple conditions in `where` are ANDed:
+
+```json
+{
+  "where": {
+    "status": {"eq": "Done"},
+    "priority": {"lt": 3}
+  }
+}
+```
+
+### AND (explicit)
+
+```json
+{
+  "where": {
+    "and": [
+      {"status": {"eq": "Done"}},
+      {"priority": {"lt": 3}}
+    ]
+  }
+}
+```
+
+### OR
+
+```json
+{
+  "where": {
+    "or": [
+      {"status": {"eq": "Done"}},
+      {"status": {"eq": "Closed"}}
+    ]
+  }
+}
+```
+
+### Nested Logic
+
+```json
+{
+  "where": {
+    "and": [
+      {"team_id": {"eq": "eng"}},
+      {"or": [
+        {"priority": {"eq": 1}},
+        {"labels": {"has_any": ["urgent"]}}
+      ]}
+    ]
+  }
+}
+```
+
+## Expected Count
+
+### Exact Count
+
+```json
+{"expected_count": 1}
+{"expected_count": 0}
+{"expected_count": 5}
+```
+
+### Bounded Count
+
+```json
+{"expected_count": {"min": 1}}
+{"expected_count": {"max": 5}}
+{"expected_count": {"min": 1, "max": 10}}
+```
+
+## Expected Changes
+
+For `diff_type: "changed"`, specify field transitions:
+
+### Check New Value Only
+
+```json
+{
+  "expected_changes": {
+    "status": {"to": {"eq": "Done"}}
+  }
+}
+```
+
+### Check Both Old and New
+
+```json
+{
+  "expected_changes": {
+    "status": {
+      "from": {"eq": "In Progress"},
+      "to": {"eq": "Done"}
+    }
+  }
+}
+```
+
+### Multiple Field Changes
+
+```json
+{
+  "expected_changes": {
+    "status": {"to": {"eq": "Done"}},
+    "completed_at": {"to": {"not_null": true}},
+    "updated_at": {"to": {"not_null": true}}
+  }
+}
+```
+
+## Complete Example
+
+```json
+{
+  "strict": true,
+  "assertions": [
+    {
+      "diff_type": "added",
+      "entity": "issues",
+      "where": {
+        "and": [
+          {"title": {"contains": "Fix"}},
+          {"team_id": {"eq": "team-eng"}},
+          {"priority": {"lte": 2}}
+        ]
+      },
+      "expected_count": 1
+    },
+    {
+      "diff_type": "changed",
+      "entity": "teams",
+      "where": {
+        "id": {"eq": "team-eng"}
+      },
+      "expected_changes": {
+        "issue_count": {
+          "from": {"eq": 5},
+          "to": {"eq": 6}
+        }
+      }
+    },
+    {
+      "diff_type": "added",
+      "entity": "comments",
+      "where": {
+        "body": {"contains": "Created issue"}
+      },
+      "expected_count": {"min": 0, "max": 1}
+    }
+  ]
+}
+```
+
+## Table Names by Service
+
+### Slack
+
+| Table | Description |
+|-------|-------------|
+| `users` | User accounts |
+| `channels` | Channels and DMs |
+| `channel_members` | Channel membership |
+| `messages` | Messages |
+| `reactions` | Emoji reactions |
+
+### Linear
+
+| Table | Description |
+|-------|-------------|
+| `issues` | Issues/tickets |
+| `teams` | Teams |
+| `users` | User accounts |
+| `comments` | Issue comments |
+| `labels` | Labels |
+| `workflow_states` | Workflow states |
+| `projects` | Projects |
+| `cycles` | Cycles/sprints |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Writing Assertions" icon="pen" href="/evaluations/writing-assertions">
+    Practical examples
+  </Card>
+  <Card title="Run Benchmarks" icon="chart-line" href="/evaluations/benchmarks">
+    Scale your evaluations
+  </Card>
+</CardGroup>
+

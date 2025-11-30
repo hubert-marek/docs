@@ -1,0 +1,98 @@
+---
+title: "List Test Suites"
+api: "GET /api/platform/testSuites"
+description: "Get all available test suites"
+---
+
+## Request
+
+```bash
+GET /api/platform/testSuites
+```
+
+### Query Parameters
+
+<ParamField query="name" type="string">
+  Filter by suite name (partial match)
+</ParamField>
+
+<ParamField query="visibility" type="string">
+  Filter by visibility: `"public"` or `"private"`
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.agentdiff.dev/api/platform/testSuites?name=Slack" \
+  -H "X-API-Key: ak_your_key"
+```
+
+## Response
+
+<ResponseField name="testSuites" type="array">
+  List of test suites
+</ResponseField>
+
+### Example Response
+
+```json
+{
+  "testSuites": [
+    {
+      "id": "suite-123",
+      "name": "Slack Bench",
+      "description": "Core Slack agent capabilities",
+      "templateService": "slack",
+      "templateName": "slack_bench_default",
+      "testCount": 20,
+      "visibility": "public",
+      "createdAt": "2025-01-01T00:00:00Z"
+    },
+    {
+      "id": "suite-456",
+      "name": "Linear Bench",
+      "description": "Linear GraphQL operations",
+      "templateService": "linear",
+      "templateName": "linear_expanded",
+      "testCount": 40,
+      "visibility": "public",
+      "createdAt": "2025-01-01T00:00:00Z"
+    }
+  ]
+}
+```
+
+## Built-in Suites
+
+| Suite | Tests | Coverage |
+|-------|-------|----------|
+| Slack Bench | 20 | Messages, channels, reactions, threading |
+| Linear Bench | 40 | Issues, labels, comments, workflows |
+
+## SDK Usage
+
+<CodeGroup>
+```python Python
+# List all suites
+suites = client.list_test_suites()
+
+for s in suites.testSuites:
+    print(f"{s.name}: {s.testCount} tests")
+
+# Filter by name
+slack_suites = client.list_test_suites(name="Slack")
+```
+
+```typescript TypeScript
+// List all suites
+const suites = await client.listTestSuites();
+
+suites.testSuites.forEach(s => {
+  console.log(`${s.name}: ${s.testCount} tests`);
+});
+
+// Filter by name
+const slackSuites = await client.listTestSuites({ name: 'Slack' });
+```
+</CodeGroup>
+

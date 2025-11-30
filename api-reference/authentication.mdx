@@ -1,0 +1,165 @@
+---
+title: "Authentication"
+description: "Authenticate your API requests"
+---
+
+## API Keys
+
+All Agent Diff API requests require authentication via an API key.
+
+### Header Format
+
+```bash
+X-API-Key: ak_{key_id}_{secret}
+```
+
+### Example Request
+
+```bash
+curl -X GET https://api.agentdiff.dev/api/platform/health \
+  -H "X-API-Key: ak_abc123_xyz789"
+```
+
+## Getting an API Key
+
+<Tabs>
+  <Tab title="Hosted">
+    1. Sign up at [agentdiff.dev](https://agentdiff.dev)
+    2. Go to your [dashboard](https://agentdiff.dev/dashboard)
+    3. Navigate to **API Keys**
+    4. Click **Create New Key**
+    5. Copy and store your key securely
+    
+    <Warning>
+    API keys are shown only once. Store them securely in environment variables.
+    </Warning>
+  </Tab>
+  <Tab title="Self-Hosted">
+    ```bash
+    cd ops
+    make reissue-key
+    ```
+    
+    This creates a development API key and prints it to console.
+    
+    For production, create keys directly in the database:
+    
+    ```sql
+    INSERT INTO api_keys (key_id, key_hash, user_id, created_at)
+    VALUES ('abc123', 'hashed_secret', 'user-id', NOW());
+    ```
+  </Tab>
+</Tabs>
+
+## Using API Keys in SDKs
+
+### Python
+
+```python
+from agent_diff import AgentDiff
+
+# Explicit
+client = AgentDiff(api_key="ak_your_key_here")
+
+# Via environment variable (recommended)
+# export AGENT_DIFF_API_KEY="ak_your_key_here"
+client = AgentDiff()
+```
+
+### TypeScript
+
+```typescript
+import { AgentDiff } from 'agent-diff';
+
+// Explicit
+const client = new AgentDiff({ apiKey: 'ak_your_key_here' });
+
+// Via environment variable (recommended)
+// export AGENT_DIFF_API_KEY="ak_your_key_here"
+const client = new AgentDiff();
+```
+
+## Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use environment variables">
+    Never hardcode API keys in your source code:
+    
+    ```bash
+    # .env file (add to .gitignore!)
+    AGENT_DIFF_API_KEY=ak_your_key_here
+    ```
+    
+    ```python
+    import os
+    from agent_diff import AgentDiff
+    
+    client = AgentDiff(api_key=os.environ.get("AGENT_DIFF_API_KEY"))
+    ```
+  </Accordion>
+  
+  <Accordion title="Rotate keys regularly">
+    Create new keys periodically and delete old ones.
+  </Accordion>
+  
+  <Accordion title="Use separate keys per environment">
+    Use different API keys for development, staging, and production.
+  </Accordion>
+  
+  <Accordion title="Monitor key usage">
+    Review API usage in your dashboard to detect unauthorized access.
+  </Accordion>
+</AccordionGroup>
+
+## Error Responses
+
+### Missing API Key
+
+```json
+{
+  "ok": false,
+  "error": "not_authed",
+  "detail": "API key required"
+}
+```
+
+### Invalid API Key
+
+```json
+{
+  "ok": false,
+  "error": "not_authed",
+  "detail": "Invalid API key"
+}
+```
+
+### Expired API Key
+
+```json
+{
+  "ok": false,
+  "error": "not_authed",
+  "detail": "API key has expired"
+}
+```
+
+## Rate Limiting
+
+API keys have rate limits based on your plan:
+
+| Plan | Requests/hour |
+|------|---------------|
+| Free | 100 |
+| Pro | 1,000 |
+| Enterprise | Unlimited |
+
+When rate limited, you'll receive:
+
+```json
+{
+  "ok": false,
+  "error": "rate_limited",
+  "detail": "Too many requests. Retry after 60 seconds."
+}
+```
+

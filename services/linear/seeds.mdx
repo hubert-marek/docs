@@ -1,0 +1,434 @@
+---
+title: "Linear Seed Files"
+description: "Create custom seed data for Linear environments"
+---
+
+## Overview
+
+Seed files define the initial state of a Linear workspace. They're JSON files that specify teams, issues, users, workflows, and more.
+
+## Quick Reference: linear_expanded
+
+The most commonly used template for benchmarks. Here's what's inside:
+
+<Tabs>
+  <Tab title="Teams">
+    | Team ID | Key | Name |
+    |---------|-----|------|
+    | `ad608998-915c-4bad-bcd9-85ebfccccee8` | ENG | Engineering |
+    | `58c03c85-7b0c-466d-9a4c-120209fccb56` | GRO | Growth |
+  </Tab>
+  <Tab title="Users">
+    | Email | Name | Role |
+    |-------|------|------|
+    | `agent@example.com` | Agent Bot | Use for `impersonateEmail` |
+    | `john@example.com` | John Doe | Team member |
+    | `sarah@example.com` | Sarah Smith | Team member |
+  </Tab>
+  <Tab title="Workflow States">
+    | Team | State | Type |
+    |------|-------|------|
+    | ENG | Backlog | backlog |
+    | ENG | Todo | unstarted |
+    | ENG | In Progress | started |
+    | ENG | Done | completed |
+  </Tab>
+  <Tab title="Sample Issues">
+    | Identifier | Title | State |
+    |------------|-------|-------|
+    | ENG-1 | Fix login bug | Backlog |
+    | ENG-2 | Add dark mode | In Progress |
+    | ENG-3 | Update docs | Todo |
+    | ... | (40+ total issues) | ... |
+  </Tab>
+  <Tab title="Labels">
+    | Name | Color |
+    |------|-------|
+    | bug | #EB5757 |
+    | feature | #2F80ED |
+    | urgent | #F2994A |
+    | RL | #9B51E0 |
+  </Tab>
+</Tabs>
+
+<Tip>Use `agent@example.com` as your `impersonateEmail` - this is the agent's identity.</Tip>
+
+## Seed File Location
+
+Seeds are stored in `examples/linear/seeds/`:
+
+```
+examples/
+└── linear/
+    └── seeds/
+        ├── linear_default.json
+        ├── linear_expanded.json
+        └── your_custom_seed.json
+```
+
+## Schema
+
+### Organization
+
+```json
+{
+  "organizations": [
+    {
+      "id": "org-uuid",
+      "name": "Acme Corp",
+      "urlKey": "acme"
+    }
+  ]
+}
+```
+
+### Teams
+
+```json
+{
+  "teams": [
+    {
+      "id": "team-uuid",
+      "name": "Engineering",
+      "key": "ENG",
+      "description": "Engineering team",
+      "organizationId": "org-uuid",
+      "issueCount": 0
+    }
+  ]
+}
+```
+
+### Users
+
+```json
+{
+  "users": [
+    {
+      "id": "user-uuid",
+      "name": "Agent Bot",
+      "email": "agent@example.com",
+      "displayName": "Agent Bot",
+      "active": true,
+      "organizationId": "org-uuid"
+    }
+  ]
+}
+```
+
+### Team Memberships
+
+```json
+{
+  "team_memberships": [
+    {
+      "id": "membership-uuid",
+      "userId": "user-uuid",
+      "teamId": "team-uuid"
+    }
+  ]
+}
+```
+
+### Workflow States
+
+```json
+{
+  "workflow_states": [
+    {
+      "id": "state-backlog-uuid",
+      "name": "Backlog",
+      "type": "backlog",
+      "position": 0,
+      "teamId": "team-uuid"
+    },
+    {
+      "id": "state-inprogress-uuid",
+      "name": "In Progress",
+      "type": "started",
+      "position": 1,
+      "teamId": "team-uuid"
+    },
+    {
+      "id": "state-done-uuid",
+      "name": "Done",
+      "type": "completed",
+      "position": 2,
+      "teamId": "team-uuid"
+    }
+  ]
+}
+```
+
+| Type | Description |
+|------|-------------|
+| `backlog` | Backlog/Triage state |
+| `unstarted` | Not started |
+| `started` | In progress |
+| `completed` | Done |
+| `canceled` | Canceled |
+
+### Issues
+
+```json
+{
+  "issues": [
+    {
+      "id": "issue-uuid",
+      "title": "Fix login bug",
+      "description": "Users can't log in with SSO",
+      "identifier": "ENG-1",
+      "number": 1,
+      "priority": 2,
+      "stateId": "state-backlog-uuid",
+      "teamId": "team-uuid",
+      "assigneeId": "user-uuid",
+      "creatorId": "user-uuid"
+    }
+  ]
+}
+```
+
+| Priority | Label |
+|----------|-------|
+| 0 | No priority |
+| 1 | Urgent |
+| 2 | High |
+| 3 | Medium |
+| 4 | Low |
+
+### Labels
+
+```json
+{
+  "issue_labels": [
+    {
+      "id": "label-uuid",
+      "name": "bug",
+      "color": "#EB5757",
+      "teamId": "team-uuid"
+    }
+  ]
+}
+```
+
+### Issue-Label Associations
+
+```json
+{
+  "issue_label_issue_association": [
+    {
+      "issueId": "issue-uuid",
+      "labelId": "label-uuid"
+    }
+  ]
+}
+```
+
+### Comments
+
+```json
+{
+  "comments": [
+    {
+      "id": "comment-uuid",
+      "body": "I'm looking into this now.",
+      "issueId": "issue-uuid",
+      "userId": "user-uuid"
+    }
+  ]
+}
+```
+
+### Projects
+
+```json
+{
+  "projects": [
+    {
+      "id": "project-uuid",
+      "name": "Q1 Roadmap",
+      "state": "started",
+      "progress": 0.5
+    }
+  ]
+}
+```
+
+---
+
+## Complete Example
+
+```json
+{
+  "organizations": [
+    {
+      "id": "18c8630e-1fd6-4c2e-a032-aa2684c16e46",
+      "name": "Acme Corp",
+      "urlKey": "acme"
+    }
+  ],
+  "teams": [
+    {
+      "id": "ad608998-915c-4bad-bcd9-85ebfccccee8",
+      "name": "Engineering",
+      "key": "ENG",
+      "description": "Engineering team",
+      "organizationId": "18c8630e-1fd6-4c2e-a032-aa2684c16e46",
+      "issueCount": 2
+    },
+    {
+      "id": "58c03c85-7b0c-466d-9a4c-120209fccb56",
+      "name": "Growth",
+      "key": "GRO",
+      "description": "Growth team",
+      "organizationId": "18c8630e-1fd6-4c2e-a032-aa2684c16e46",
+      "issueCount": 0
+    }
+  ],
+  "users": [
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Agent Bot",
+      "email": "agent@example.com",
+      "displayName": "Agent Bot",
+      "organizationId": "18c8630e-1fd6-4c2e-a032-aa2684c16e46"
+    },
+    {
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "displayName": "John Doe",
+      "organizationId": "18c8630e-1fd6-4c2e-a032-aa2684c16e46"
+    }
+  ],
+  "team_memberships": [
+    {
+      "id": "mem-1",
+      "userId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "teamId": "ad608998-915c-4bad-bcd9-85ebfccccee8"
+    },
+    {
+      "id": "mem-2",
+      "userId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "teamId": "ad608998-915c-4bad-bcd9-85ebfccccee8"
+    }
+  ],
+  "workflow_states": [
+    {
+      "id": "8708b274-82d1-4769-bb1a-c4937db76d0f",
+      "name": "Backlog",
+      "type": "backlog",
+      "position": 0,
+      "teamId": "ad608998-915c-4bad-bcd9-85ebfccccee8"
+    },
+    {
+      "id": "9809c385-93e2-5870-cc2b-d5048ec87e10",
+      "name": "In Progress",
+      "type": "started",
+      "position": 1,
+      "teamId": "ad608998-915c-4bad-bcd9-85ebfccccee8"
+    },
+    {
+      "id": "a910d496-04f3-6981-dd3c-e6159fd98f21",
+      "name": "Done",
+      "type": "completed",
+      "position": 2,
+      "teamId": "ad608998-915c-4bad-bcd9-85ebfccccee8"
+    }
+  ],
+  "issue_labels": [
+    {
+      "id": "label-bug",
+      "name": "bug",
+      "color": "#EB5757",
+      "teamId": "ad608998-915c-4bad-bcd9-85ebfccccee8"
+    },
+    {
+      "id": "label-feature",
+      "name": "feature",
+      "color": "#2F80ED",
+      "teamId": "ad608998-915c-4bad-bcd9-85ebfccccee8"
+    }
+  ],
+  "issues": [
+    {
+      "id": "issue-1-uuid",
+      "title": "Fix login bug",
+      "description": "Users can't log in with SSO",
+      "identifier": "ENG-1",
+      "number": 1,
+      "priority": 2,
+      "stateId": "8708b274-82d1-4769-bb1a-c4937db76d0f",
+      "teamId": "ad608998-915c-4bad-bcd9-85ebfccccee8",
+      "assigneeId": "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+    },
+    {
+      "id": "issue-2-uuid",
+      "title": "Add dark mode",
+      "description": "Users want dark mode",
+      "identifier": "ENG-2",
+      "number": 2,
+      "priority": 3,
+      "stateId": "9809c385-93e2-5870-cc2b-d5048ec87e10",
+      "teamId": "ad608998-915c-4bad-bcd9-85ebfccccee8"
+    }
+  ],
+  "issue_label_issue_association": [
+    {
+      "issueId": "issue-1-uuid",
+      "labelId": "label-bug"
+    }
+  ],
+  "comments": [
+    {
+      "id": "comment-1-uuid",
+      "body": "I'll look into this today.",
+      "issueId": "issue-1-uuid",
+      "userId": "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+    }
+  ]
+}
+```
+
+## Creating a Custom Template
+
+1. Create your seed file in `examples/linear/seeds/my_seed.json`
+
+2. Register the template (during seed script execution)
+
+3. Use your template:
+
+```python
+env = client.init_env(
+    templateService="linear",
+    templateName="my_custom_template",
+    impersonateEmail="agent@example.com"
+)
+```
+
+## Tips
+
+<Tip>
+**UUIDs**: Use proper UUIDs for IDs. You can generate them with Python's `uuid.uuid4()`.
+</Tip>
+
+<Tip>
+**Issue Numbers**: Keep `identifier` and `number` consistent with team `key`. For team "ENG", issue number 1 should have identifier "ENG-1".
+</Tip>
+
+<Warning>
+**Foreign Keys**: Ensure all referenced IDs exist. An issue's `teamId`, `stateId`, and `assigneeId` must reference valid entities.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="GraphQL API" icon="code" href="/services/linear/queries">
+    Supported queries and mutations
+  </Card>
+  <Card title="Self-Hosting" icon="server" href="/hosting/docker-setup">
+    Deploy your own instance
+  </Card>
+</CardGroup>
+

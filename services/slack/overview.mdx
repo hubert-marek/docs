@@ -1,0 +1,165 @@
+---
+title: "Slack Overview"
+description: "Slack Web API replica for agent testing"
+---
+
+## Overview
+
+Agent Diff provides a high-fidelity replica of the Slack Web API. Your agent can post messages, manage channels, add reactions, and more - all in an isolated environment.
+
+## Getting Started
+
+```python
+from agent_diff import AgentDiff
+
+client = AgentDiff()
+
+# Create Slack environment
+env = client.init_env(
+    templateService="slack",
+    templateName="slack_default",
+    impersonateUserId="U01AGENBOT9"  # User your agent acts as
+)
+
+# API base URL
+print(env.environmentUrl)
+# Output: http://localhost:8000/api/env/{id}/services/slack
+```
+
+## Making API Calls
+
+### Direct HTTP
+
+```python
+import requests
+
+# List channels
+response = requests.get(f"{env.environmentUrl}/conversations.list")
+channels = response.json()["channels"]
+
+# Post message
+response = requests.post(f"{env.environmentUrl}/chat.postMessage", json={
+    "channel": "C01GENERAL99",
+    "text": "Hello from my agent!"
+})
+```
+
+### Using Code Executor
+
+```python
+from agent_diff import PythonExecutorProxy
+
+executor = PythonExecutorProxy(env.environmentId, client.base_url)
+
+# Agent code uses production URLs - they get transformed automatically
+result = executor.execute("""
+import requests
+
+response = requests.post('https://slack.com/api/chat.postMessage', json={
+    'channel': 'C01GENERAL99',
+    'text': 'Hello!'
+})
+print(response.json())
+""")
+```
+
+## Available Templates
+
+| Template | Description | Seed Data |
+|----------|-------------|-----------|
+| `slack_default` | Basic workspace | 3 users, 2 channels, 3 messages |
+| `slack_bench_default` | Benchmark suite | Extended data for evaluations |
+| `slack_base` | Minimal | Users and channels only |
+
+## Response Format
+
+All responses follow the Slack Web API format:
+
+```json
+{
+  "ok": true,
+  "channel": "C01GENERAL99",
+  "ts": "1732645891.000200",
+  "message": {
+    "type": "message",
+    "user": "U01AGENBOT9",
+    "text": "Hello!",
+    "ts": "1732645891.000200"
+  }
+}
+```
+
+## Error Handling
+
+Errors match Slack's error codes:
+
+```json
+{
+  "ok": false,
+  "error": "channel_not_found"
+}
+```
+
+Common error codes:
+- `channel_not_found` - Invalid channel ID
+- `not_in_channel` - User not a member
+- `message_not_found` - Invalid message timestamp
+- `is_archived` - Channel is archived
+
+## Authentication
+
+In Agent Diff, authentication is mocked. The `impersonateUserId` you specify when creating the environment determines which user the agent acts as.
+
+```python
+env = client.init_env(
+    templateService="slack",
+    templateName="slack_default",
+    impersonateUserId="U01AGENBOT9"  # Agent's identity
+)
+
+# All API calls are made as U01AGENBOT9
+```
+
+## Seed Data Structure
+
+```json
+{
+  "users": [
+    {
+      "user_id": "U01AGENBOT9",
+      "username": "agent_bot",
+      "display_name": "Agent Bot"
+    }
+  ],
+  "channels": [
+    {
+      "channel_id": "C01GENERAL99",
+      "name": "general",
+      "is_private": false
+    }
+  ],
+  "channel_members": [
+    {"channel_id": "C01GENERAL99", "user_id": "U01AGENBOT9"}
+  ],
+  "messages": [
+    {
+      "message_id": "1732645800.000100",
+      "channel_id": "C01GENERAL99",
+      "user_id": "U01AGENBOT9",
+      "message_text": "Welcome!"
+    }
+  ]
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Supported Methods" icon="list" href="/services/slack/methods">
+    Full API method reference
+  </Card>
+  <Card title="Seed Files" icon="database" href="/services/slack/seeds">
+    Create custom seed data
+  </Card>
+</CardGroup>
+
