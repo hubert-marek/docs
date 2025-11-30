@@ -162,9 +162,9 @@
       }
     ],
     "primary": {
-      "type": "button",
+      "type": "link",
       "label": "Get Started",
-      "href": "/quickstart"
+      "href": "https://docs.agentdiff.com/quickstart"
     }
   },
   "contextual": {
