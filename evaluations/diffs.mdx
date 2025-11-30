@@ -47,10 +47,7 @@ description: "A diff is the computed difference between the before and after sta
 
 Agent Diff uses PostgreSQL logical replication to capture every change:
 
-1. **WAL Capture**: All database writes are logged to the Write-Ahead Log
-2. **wal2json**: Converts WAL entries to JSON format
-3.  **Change Journal**: Filtered and stored per environment/run 
-4. **Diff Computation**: Aggregated into inserts/updates/deletes
+1. **WAL Capture**: All database writes are logged to the Write-Ahead Log 2. **wal2json**: Converts WAL entries to JSON format 3. **Change Journal**: Filtered and stored per environment/run 4. **Diff Computation**: Aggregated into inserts/updates/deletes
 
 <Note>
   This approach captures changes at the database level, so it works regardless of which API endpoint the agent used.
