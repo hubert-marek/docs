@@ -1,0 +1,136 @@
+---
+title: "How Code Executors Work"
+description: "Understanding API interception and URL transformation"
+---
+
+## Overview
+
+Code executors **wrap** your agent's code and **intercept** API calls. They allow your AI agent to write normal code targeting production APIs (like `https://slack.com/api/*`) while actually hitting isolated test environments.
+
+## Flow
+
+<Steps>
+  <Step title="Agent Writes Code">
+    ```python
+    requests.post('https://slack.com/api/chat.postMessage', json={...})
+    ```
+  </Step>
+  <Step title="Code executor Proxy">
+    1. Wraps code with interception logic
+    2. Detects API URL patterns
+    3. Rewrites URLs to route into the isolated environment
+
+    ```bash
+    https://slack.com/api/* 
+        → http://localhost:8000/api/env/{env_id}/services/slack/*
+    ```
+  </Step>
+  <Step title="Environment">
+    Real API responses from your sandboxed environment
+  </Step>
+</Steps>
+
+## URL Transformation Rules
+
+The executor transforms URLs based on these patterns:
+
+| Original URL                  | Transformed URL                                        |
+| ----------------------------- | ------------------------------------------------------ |
+| `https://slack.com/api/*`     | `http://localhost:8000/api/env/{id}/services/slack/*`  |
+| `https://api.slack.com/api/*` | `http://localhost:8000/api/env/{id}/services/slack/*`  |
+| `https://api.linear.app/*`    | `http://localhost:8000/api/env/{id}/services/linear/*` |
+
+## Available Executors
+
+<CardGroup cols={3}>
+  <Card title="Python" icon="python" href="/executors/python">
+    Intercepts `requests` and `urllib`
+  </Card>
+  <Card title="TypeScript" icon="js" href="/executors/typescript">
+    Intercepts `fetch` API
+  </Card>
+  <Card title="Bash" icon="terminal" href="/executors/bash">
+    Intercepts `curl` commands
+  </Card>
+</CardGroup>
+
+## How Interception Works
+
+### Python Executor
+
+The Python executor wraps code with a custom URL opener:
+
+```python
+# What gets prepended to your code:
+import urllib.request
+import urllib.parse
+from urllib.request import Request, urlopen
+
+_original_urlopen = urllib.request.urlopen
+
+def _intercepting_urlopen(url, *args, **kwargs):
+    if isinstance(url, str):
+        url = _transform_url(url)
+    elif hasattr(url, 'full_url'):
+        url.full_url = _transform_url(url.full_url)
+    return _original_urlopen(url, *args, **kwargs)
+
+urllib.request.urlopen = _intercepting_urlopen
+
+# Also patches requests library
+import requests
+_original_request = requests.Session.request
+
+def _intercepting_request(self, method, url, *args, **kwargs):
+    return _original_request(self, method, _transform_url(url), *args, **kwargs)
+
+requests.Session.request = _intercepting_request
+```
+
+### TypeScript Executor
+
+The TypeScript executor overrides global `fetch`:
+
+```typescript
+// What gets prepended to your code:
+const originalFetch = globalThis.fetch;
+
+globalThis.fetch = async (url: string | URL, init?: RequestInit) => {
+  const transformedUrl = transformUrl(url.toString());
+  return originalFetch(transformedUrl, init);
+};
+```
+
+### Bash Executor
+
+The Bash executor uses sed to transform curl URLs:
+
+```bash
+# Original curl command:
+curl https://slack.com/api/chat.postMessage -d '{"text":"hello"}'
+
+# Transformed:
+curl http://localhost:8000/api/env/{id}/services/slack/chat.postMessage -d '{"text":"hello"}'
+```
+
+## Security Considerations
+
+<Warning>
+  Code executors run arbitrary code. In production, consider:
+
+  - Running executors in sandboxed containers
+  - Implementing timeouts
+  - Restricting network access
+  - Validating code before execution
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Python Executor" icon="python" href="/executors/python">
+    Detailed Python executor guide
+  </Card>
+  <Card title="TypeScript Executor" icon="js" href="/executors/typescript">
+    Detailed TypeScript executor guide
+  </Card>
+</CardGroup>
