@@ -164,7 +164,7 @@
     "primary": {
       "type": "link",
       "label": "Get Started",
-      "href": "https://docs.agentdiff.com/quickstart"
+      "href": "https://agentdiff.mintlify.app/quickstart"
     }
   },
   "contextual": {
