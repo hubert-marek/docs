@@ -242,32 +242,6 @@ async def run_parallel_benchmark(suite_name: str, concurrency: int = 5):
     return results
 ```
 
-## Visualizing Results
-
-```python
-import matplotlib.pyplot as plt
-
-def plot_results(results_by_model: dict):
-    """Create a bar chart of pass rates by model."""
-    
-    models = list(results_by_model.keys())
-    pass_rates = [
-        sum(1 for r in results if r["passed"]) / len(results)
-        for results in results_by_model.values()
-    ]
-    
-    plt.figure(figsize=(10, 6))
-    plt.bar(models, pass_rates, color=['#4CAF50', '#2196F3', '#FF9800', '#9C27B0'])
-    plt.ylabel('Pass Rate')
-    plt.title('Model Comparison on Linear Bench')
-    plt.ylim(0, 1)
-    
-    for i, rate in enumerate(pass_rates):
-        plt.text(i, rate + 0.02, f'{rate:.0%}', ha='center')
-    
-    plt.savefig('benchmark_comparison.png')
-    plt.show()
-```
 
 ## HuggingFace Dataset
 
