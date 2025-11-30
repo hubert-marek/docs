@@ -27,55 +27,24 @@ Evaluations let you verify that your AI agent performed the expected actions. In
     ```
   </Step>
   <Step title="Agent Execution">
-    - Environment initialized from template
+    - Environment initialised from template
     - **Before** snapshot recorded
     - Agent executed with prompt
     - **After** snapshot recorded
     - Differences computed
   </Step>
-  <Step title="New Step">
+  <Step title="Assertion">
+    ```json
+    diff: {
+      inserts: [
+        { table: "messages", text: "Hello World!" }
+      ]
+    }
     
+    ✓ Assertion passed: Found 1 message containing "Hello"
+    ```
   </Step>
 </Steps>
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         TEST DEFINITION                              │
-│                                                                      │
-│  {                                                                   │
-│    "prompt": "Post 'Hello' to #general",                            │
-│    "assertions": [{                                                  │
-│      "diff_type": "added",                                          │
-│      "entity": "messages",                                          │
-│      "where": { "text": { "contains": "Hello" } }                   │
-│    }]                                                                │
-│  }                                                                   │
-└────────────────────────────────────┬────────────────────────────────┘
-                                     │
-                                     ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                         AGENT EXECUTION                              │
-│                                                                      │
-│  1. Environment created from template                                │
-│  2. "Before" snapshot taken                                          │
-│  3. Agent runs with prompt                                           │
-│  4. "After" snapshot taken                                           │
-│  5. Diff computed                                                    │
-│                                                                      │
-└────────────────────────────────────┬────────────────────────────────┘
-                                     │
-                                     ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                         ASSERTION EVALUATION                         │
-│                                                                      │
-│  diff: {                                                             │
-│    inserts: [{ table: "messages", text: "Hello World!" }]           │
-│  }                                                                   │
-│                                                                      │
-│  ✓ Assertion passed: Found 1 message containing "Hello"             │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
-```
 
 ## Key Components
 
