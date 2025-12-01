@@ -23,7 +23,7 @@ description: "Complete REST API documentation for Agent Diff"
 All API requests require authentication via API key header:
 
 ```bash
-curl -H "X-API-Key: ak_your_api_key" \
+curl -H "X-API-Key: ad_live_sk_..." \
   https://api.agentdiff.dev/api/platform/health
 ```
 
@@ -126,7 +126,7 @@ We recommend using our SDKs instead of calling the API directly:
 ```bash
 # 1. Create environment
 curl -X POST https://api.agentdiff.dev/api/platform/initEnv \
-  -H "X-API-Key: ak_your_key" \
+  -H "X-API-Key: ad_live_sk_..." \
   -H "Content-Type: application/json" \
   -d '{
     "templateService": "slack",
@@ -138,7 +138,7 @@ curl -X POST https://api.agentdiff.dev/api/platform/initEnv \
 
 # 2. Start run
 curl -X POST https://api.agentdiff.dev/api/platform/startRun \
-  -H "X-API-Key: ak_your_key" \
+  -H "X-API-Key: ad_live_sk_..." \
   -H "Content-Type: application/json" \
   -d '{"envId": "abc123"}'
 
@@ -146,13 +146,13 @@ curl -X POST https://api.agentdiff.dev/api/platform/startRun \
 
 # 3. Make API calls to isolated environment
 curl -X POST https://api.agentdiff.dev/api/env/abc123/services/slack/chat.postMessage \
-  -H "X-API-Key: ak_your_key" \
+  -H "X-API-Key: ad_live_sk_..." \
   -H "Content-Type: application/json" \
   -d '{"channel": "C01GENERAL99", "text": "Hello!"}'
 
 # 4. Get diff
 curl -X POST https://api.agentdiff.dev/api/platform/diffRun \
-  -H "X-API-Key: ak_your_key" \
+  -H "X-API-Key: ad_live_sk_..." \
   -H "Content-Type: application/json" \
   -d '{"runId": "run-456"}'
 

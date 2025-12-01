@@ -26,23 +26,51 @@ poetry add agent-diff
 
 ## Configuration
 
-### Self-Hosted (Local)
+<Tip>
+**Both the client and code executors** use the same environment variables. Set them once and everything works automatically.
+</Tip>
 
-```python
-from agent_diff import AgentDiff
+### Environment Variables (Recommended)
 
-# Connects to http://localhost:8000 by default
-client = AgentDiff()
+Set these once in your shell or `.env` file:
+
+```bash
+# For hosted version
+export AGENT_DIFF_API_KEY="ad_live_sk_..."  # Get from dashboard
+export AGENT_DIFF_BASE_URL="https://api.agentdiff.dev"
+
+# For local development (no API key needed)
+export AGENT_DIFF_BASE_URL="http://localhost:8000"
 ```
 
-### Agent Diff Cloud (Hosted)
-
-For the hosted version at `api.agentdiff.dev`:
+Then both client and executors auto-configure:
 
 ```python
+from agent_diff import AgentDiff, PythonExecutorProxy
+
+# Both automatically use env vars
+client = AgentDiff()
+executor = PythonExecutorProxy(env.environmentId)  
+```
+
+### Explicit Configuration
+
+You can also pass values directly:
+
+```python
+from agent_diff import AgentDiff, PythonExecutorProxy
+
+# Client with explicit config
 client = AgentDiff(
     base_url="https://api.agentdiff.dev",
-    api_key="ak_your_api_key_here"  # Get from dashboard
+    api_key="ad_live_sk_..."
+)
+
+# Executor with explicit config
+executor = PythonExecutorProxy(
+    environment_id=env.environmentId,
+    base_url=client.base_url,
+    token=client.api_key
 )
 ```
 
@@ -50,43 +78,10 @@ client = AgentDiff(
 Sign up at [agentdiff.dev](https://agentdiff.dev) to get your API key for the hosted version.
 </Note>
 
-### Custom Self-Hosted URL
-
-```python
-client = AgentDiff(base_url="https://your-agentdiff-server.com")
-```
-
-### With API Key (Self-Hosted)
-
-```python
-client = AgentDiff(
-    base_url="https://your-agentdiff-server.com",
-    api_key="ak_your_api_key_here"
-)
-```
-
-### Environment Variables
-
-You can also configure via environment variables:
-
-```bash
-# For hosted version
-export AGENT_DIFF_BASE_URL="https://api.agentdiff.dev"
-export AGENT_DIFF_API_KEY="ak_your_api_key"
-
-# For local development
-export AGENT_DIFF_BASE_URL="http://localhost:8000"
-```
-
-```python
-# SDK will automatically use environment variables
-client = AgentDiff()
-```
-
 ### Configuration Priority
 
 The SDK resolves configuration in this order:
-1. Explicit parameters passed to `AgentDiff()`
+1. Explicit parameters passed to constructor
 2. Environment variables (`AGENT_DIFF_BASE_URL`, `AGENT_DIFF_API_KEY`)
 3. Defaults (`http://localhost:8000`, no API key)
 

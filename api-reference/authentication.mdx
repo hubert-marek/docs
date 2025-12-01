@@ -10,14 +10,14 @@ All Agent Diff API requests require authentication via an API key.
 ### Header Format
 
 ```bash
-X-API-Key: ak_{key_id}_{secret}
+X-API-Key: ad_live_sk_...
 ```
 
 ### Example Request
 
 ```bash
 curl -X GET https://api.agentdiff.dev/api/platform/health \
-  -H "X-API-Key: ak_abc123_xyz789"
+  -H "X-API-Key: ad_live_sk_3dqKGDx1QkqFw7RzPSfhrzMs..."
 ```
 
 ## Getting an API Key
@@ -56,14 +56,16 @@ curl -X GET https://api.agentdiff.dev/api/platform/health \
 ### Python
 
 ```python
-from agent_diff import AgentDiff
-
-# Explicit
-client = AgentDiff(api_key="ak_your_key_here")
+from agent_diff import AgentDiff, PythonExecutorProxy
 
 # Via environment variable (recommended)
-# export AGENT_DIFF_API_KEY="ak_your_key_here"
+# export AGENT_DIFF_API_KEY="ad_live_sk_..."
+# export AGENT_DIFF_BASE_URL="https://api.agentdiff.dev"
 client = AgentDiff()
+executor = PythonExecutorProxy(env.environmentId)  # Also uses env vars!
+
+# Or explicit
+client = AgentDiff(api_key="ad_live_sk_...")
 ```
 
 ### TypeScript
@@ -71,12 +73,12 @@ client = AgentDiff()
 ```typescript
 import { AgentDiff } from 'agent-diff';
 
-// Explicit
-const client = new AgentDiff({ apiKey: 'ak_your_key_here' });
-
 // Via environment variable (recommended)
-// export AGENT_DIFF_API_KEY="ak_your_key_here"
+// export AGENT_DIFF_API_KEY="ad_live_sk_..."
 const client = new AgentDiff();
+
+// Or explicit
+const client = new AgentDiff({ apiKey: 'ad_live_sk_...' });
 ```
 
 ## Security Best Practices
@@ -87,14 +89,15 @@ const client = new AgentDiff();
     
     ```bash
     # .env file (add to .gitignore!)
-    AGENT_DIFF_API_KEY=ak_your_key_here
+    AGENT_DIFF_API_KEY=ad_live_sk_...
+    AGENT_DIFF_BASE_URL=https://api.agentdiff.dev
     ```
     
     ```python
-    import os
     from agent_diff import AgentDiff
     
-    client = AgentDiff(api_key=os.environ.get("AGENT_DIFF_API_KEY"))
+    # SDK automatically reads from env vars
+    client = AgentDiff()
     ```
   </Accordion>
   
@@ -145,21 +148,25 @@ const client = new AgentDiff();
 
 ## Rate Limiting
 
-API keys have rate limits based on your plan:
+API keys have daily rate limits:
 
-| Plan | Requests/hour |
-|------|---------------|
-| Free | 100 |
-| Pro | 1,000 |
-| Enterprise | Unlimited |
+| Resource | Daily Limit |
+|----------|-------------|
+| Environments created | 200 |
+| API requests | 2,000 |
 
 When rate limited, you'll receive:
 
 ```json
 {
-  "ok": false,
-  "error": "rate_limited",
-  "detail": "Too many requests. Retry after 60 seconds."
+  "valid": false,
+  "reason": "daily environment limit reached",
+  "limit": 200,
+  "current": 200
 }
 ```
+
+<Note>
+Need higher limits? Contact me at hubert@uni.minerva.edu
+</Note>
 

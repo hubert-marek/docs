@@ -7,16 +7,22 @@ description: "Execute Python code with API interception"
 
 The `PythonExecutorProxy` intercepts Python HTTP libraries (`requests`, `urllib`) and routes API calls to isolated environments.
 
+## Configuration
+
+The executor automatically loads credentials from environment variables:
+
+```bash
+export AGENT_DIFF_API_KEY="ad_live_sk_..."
+export AGENT_DIFF_BASE_URL="https://api.agentdiff.dev"
+```
+
 ## Basic Usage
 
 ```python
 from agent_diff import PythonExecutorProxy
 
-# Create executor for an environment
-executor = PythonExecutorProxy(
-    environment_id="env-123",
-    base_url="http://localhost:8000"  # Optional, defaults to localhost
-)
+# Create executor - auto-loads base_url and token from env vars
+executor = PythonExecutorProxy(environment_id="env-123")
 
 # Execute code
 result = executor.execute("""
@@ -41,7 +47,8 @@ print(result["status"])  # "success" or "error"
 from agent_diff import PythonExecutorProxy, create_openai_tool
 from agents import Agent
 
-executor = PythonExecutorProxy(env.environmentId, client.base_url)
+# Uses env vars automatically
+executor = PythonExecutorProxy(env.environmentId)
 tool = create_openai_tool(executor)
 
 agent = Agent(
@@ -56,7 +63,7 @@ agent = Agent(
 ```python
 from agent_diff import PythonExecutorProxy, create_langchain_tool
 
-executor = PythonExecutorProxy(env.environmentId, client.base_url)
+executor = PythonExecutorProxy(env.environmentId)
 tool = create_langchain_tool(executor)
 
 # Use with LangChain agent
@@ -67,7 +74,7 @@ tool = create_langchain_tool(executor)
 ```python
 from agent_diff import PythonExecutorProxy, create_smolagents_tool
 
-executor = PythonExecutorProxy(env.environmentId, client.base_url)
+executor = PythonExecutorProxy(env.environmentId)
 tool = create_smolagents_tool(executor)
 
 # Use with smolagents CodeAgent
@@ -161,10 +168,16 @@ print(response.json())
 ## Configuration Options
 
 ```python
+# Option 1: Environment variables (recommended)
+# export AGENT_DIFF_API_KEY="ad_live_sk_..."
+# export AGENT_DIFF_BASE_URL="https://api.agentdiff.dev"
+executor = PythonExecutorProxy(environment_id="env-123")
+
+# Option 2: Explicit configuration
 executor = PythonExecutorProxy(
     environment_id="env-123",
-    base_url="http://localhost:8000",
-    token="optional-auth-token"  # Passed as X-API-Key header
+    base_url="https://api.agentdiff.dev",
+    token="ad_live_sk_..."  # Passed as Authorization header
 )
 ```
 
