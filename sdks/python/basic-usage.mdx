@@ -113,7 +113,9 @@ result = client.evaluate_run(
             "entity": "issues",
             "where": {"title": {"contains": "Fix bug"}}
         }],
-        "masks": ["id", "created_at", "updated_at"]
+        "ignore_fields": {
+            "global": ["id", "created_at", "updated_at"]
+        }
     }
 )
 ```
@@ -123,14 +125,14 @@ result = client.evaluate_run(
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `runId` | string | Yes | Run ID to evaluate |
-| `expectedOutput` | object | No | Explicit assertions and masks (if not using test suite) |
+| `expectedOutput` | object | No | Explicit assertions (if not using test suite) |
 
 **Expected Output Structure:**
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `assertions` | array | List of assertions to check |
-| `masks` | array | Fields to ignore in comparison |
+| `ignore_fields` | object | Fields to ignore: `{"global": [...], "entity": [...]}` |
 | `strict` | boolean | Fail on extra changes (default: false) |
 
 ### Get Results
@@ -253,13 +255,10 @@ print(f"Prompt: {test.prompt}")
 suite = client.create_test_suite(
     name="My Agent Tests",
     description="Custom tests for my Slack agent",
-    templateService="slack",
-    templateName="slack_default",
-    impersonateUserId="U01AGENBOT9",
     visibility="private"
 )
 
-print(f"Created suite: {suite.suiteId}")
+print(f"Created suite: {suite.id}")
 ```
 
 **Parameters:**
@@ -267,35 +266,39 @@ print(f"Created suite: {suite.suiteId}")
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `name` | string | Yes | Name for the test suite |
-| `templateService` | string | Yes | Service type: `"slack"` or `"linear"` |
-| `templateName` | string | Yes | Template to use for tests |
-| `impersonateUserId` | string | Yes | User ID the agent will act as |
-| `description` | string | No | Description of the suite |
+| `description` | string | Yes | Description of the suite |
 | `visibility` | string | No | `"public"` or `"private"` (default: `"private"`) |
 
 ### Add Tests to Suite
 
 ```python
-# Add multiple tests
-response = client.create_tests(suite_id, CreateTestsRequest(tests=[
-    TestItem(
-        name="Post message",
-        prompt="Post 'Hello' to #general",
-        expectedOutput={
-            "assertions": [{
-                "diff_type": "added",
-                "entity": "messages",
-                "where": {"message_text": {"contains": "Hello"}}
-            }]
+# Add a single test
+test = client.create_test(suite.id, {
+    "name": "Post message",
+    "prompt": "Post 'Hello' to #general",
+    "type": "actionEval",
+    "environmentTemplate": "slack_default",
+    "impersonateUserId": "U01AGENBOT9",
+    "expected_output": {
+        "assertions": [{
+            "diff_type": "added",
+            "entity": "messages",
+            "where": {"message_text": {"contains": "Hello"}}
+        }],
+        "ignore_fields": {
+            "global": ["ts", "message_id", "created_at"]
         }
-    )
-]))
+    }
+})
 
-# Or add a single test
-test = client.create_test(suite_id, {
+# Add another test
+test2 = client.create_test(suite.id, {
     "name": "Add reaction",
     "prompt": "React with 👍 to the latest message",
-    "expectedOutput": {
+    "type": "actionEval",
+    "environmentTemplate": "slack_default",
+    "impersonateUserId": "U01AGENBOT9",
+    "expected_output": {
         "assertions": [{
             "diff_type": "added",
             "entity": "reactions"

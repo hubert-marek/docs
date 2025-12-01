@@ -22,20 +22,21 @@ A test suite is a collection of related tests that share:
   "id": "suite-123",
   "name": "Slack Bench",
   "description": "Core Slack agent capabilities",
-  "templateService": "slack",
-  "templateName": "slack_bench_default",
-  "impersonateUserId": "U01AGENBOT9",
   "visibility": "public",
   "tests": [
     {
       "id": "test-001",
       "name": "Post message to channel",
       "prompt": "Post 'Hello World!' to #general",
-      "expectedOutput": {
+      "type": "actionEval",
+      "environmentTemplate": "slack_bench_default",
+      "impersonateUserId": "U01AGENBOT9",
+      "expected_output": {
         "assertions": [...],
-        "masks": ["created_at", "updated_at", "message_id"]
-      },
-      "tags": ["messages", "basic"]
+        "ignore_fields": {
+          "global": ["created_at", "updated_at", "message_id"]
+        }
+      }
     }
   ]
 }
@@ -46,10 +47,7 @@ A test suite is a collection of related tests that share:
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `name` | string | Yes | Name of the test suite |
-| `description` | string | No | Description of what the suite tests |
-| `templateService` | string | Yes | Service type: `"slack"` or `"linear"` |
-| `templateName` | string | Yes | Template/seed to use |
-| `impersonateUserId` | string | Yes | User ID the agent acts as |
+| `description` | string | Yes | Description of what the suite tests |
 | `visibility` | string | No | `"public"` or `"private"` (default) |
 
 ### Test Parameters
@@ -58,15 +56,17 @@ A test suite is a collection of related tests that share:
 |-----------|------|----------|-------------|
 | `name` | string | Yes | Name of the test |
 | `prompt` | string | Yes | Task prompt for the agent |
-| `expectedOutput` | object | Yes | Expected assertions and masks |
-| `tags` | array | No | Tags for filtering tests |
+| `type` | string | Yes | Test type: `"actionEval"`, `"retriEval"`, or `"compositeEval"` |
+| `environmentTemplate` | string/UUID | Yes | Template name or ID to use |
+| `impersonateUserId` | string | No | User ID the agent acts as |
+| `expected_output` | object | Yes | Expected assertions and ignore_fields |
 
 ### Expected Output Structure
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `assertions` | array | List of assertions to evaluate |
-| `masks` | array | Fields to ignore in diff comparison |
+| `ignore_fields` | object | Fields to ignore: `{"global": [...], "entity_name": [...]}` |
 | `strict` | boolean | Fail if extra changes exist (default: false) |
 
 ## Listing Test Suites
@@ -102,58 +102,61 @@ for test in suite.tests:
 
 ```python
 # Create a new test suite
-suite = client.create_test_suite({
-    "name": "My Agent Tests",
-    "description": "Custom tests for my Slack agent",
-    "templateService": "slack",
-    "templateName": "slack_default",
-    "impersonateUserId": "U01AGENBOT9",
-    "visibility": "private"
-})
+suite = client.create_test_suite(
+    name="My Agent Tests",
+    description="Custom tests for my Slack agent",
+    visibility="private"
+)
 
-print(f"Created suite: {suite.suiteId}")
+print(f"Created suite: {suite.id}")
 ```
 
 ## Adding Tests to a Suite
 
 ```python
-# Add tests with assertions and masks
-client.create_tests(suite.suiteId, {
-    "tests": [
-        {
-            "name": "Post welcome message",
-            "prompt": "Post a welcome message to #general",
-            "tags": ["messages", "basic"],
-            "expectedOutput": {
-                "assertions": [{
-                    "diff_type": "added",
-                    "entity": "messages",
-                    "where": {
-                        "channel_id": {"eq": "C01GENERAL99"},
-                        "message_text": {"contains": "welcome"}
-                    },
-                    "expected_count": 1
-                }],
-                "masks": ["ts", "message_id", "created_at"]
-            }
-        },
-        {
-            "name": "Create thread reply",
-            "prompt": "Reply 'Got it!' to the latest message in #general",
-            "tags": ["messages", "threading"],
-            "expectedOutput": {
-                "assertions": [{
-                    "diff_type": "added",
-                    "entity": "messages",
-                    "where": {
-                        "parent_id": {"not_null": true},
-                        "message_text": {"eq": "Got it!"}
-                    }
-                }],
-                "masks": ["ts", "message_id", "created_at"]
-            }
+# Add tests with assertions
+test = client.create_test(suite.id, {
+    "name": "Post welcome message",
+    "prompt": "Post a welcome message to #general",
+    "type": "actionEval",
+    "environmentTemplate": "slack_default",
+    "impersonateUserId": "U01AGENBOT9",
+    "expected_output": {
+        "assertions": [{
+            "diff_type": "added",
+            "entity": "messages",
+            "where": {
+                "channel_id": {"eq": "C01GENERAL99"},
+                "message_text": {"contains": "welcome"}
+            },
+            "expected_count": 1
+        }],
+        "ignore_fields": {
+            "global": ["ts", "message_id", "created_at"]
         }
-    ]
+    }
+})
+
+# Add another test
+test2 = client.create_test(suite.id, {
+    "name": "Create thread reply",
+    "prompt": "Reply 'Got it!' to the latest message in #general",
+    "type": "actionEval",
+    "environmentTemplate": "slack_default",
+    "impersonateUserId": "U01AGENBOT9",
+    "expected_output": {
+        "assertions": [{
+            "diff_type": "added",
+            "entity": "messages",
+            "where": {
+                "parent_id": {"not_null": true},
+                "message_text": {"eq": "Got it!"}
+            }
+        }],
+        "ignore_fields": {
+            "global": ["ts", "message_id", "created_at"]
+        }
+    }
 })
 ```
 
@@ -163,7 +166,8 @@ You can run evaluations without a pre-defined test suite by passing the expected
 
 ```python
 from agent_diff import AgentDiff, PythonExecutorProxy, create_langchain_tool
-from langchain.agents import create_agent
+from langgraph.prebuilt import create_react_agent as create_agent
+from langchain_openai import ChatOpenAI
 
 client = AgentDiff()
 
@@ -178,8 +182,9 @@ env = client.init_env(
 run = client.start_run(envId=env.environmentId)
 
 # Run your agent...
+model = ChatOpenAI(model="gpt-4o")
 agent = create_agent(
-    model="claude-sonnet-4-5-20250929",
+    model=model,
     tools=[create_langchain_tool(PythonExecutorProxy(env.environmentId))],
     system_prompt="Use execute_python to interact with Linear GraphQL API"
 )
@@ -198,7 +203,9 @@ result = client.evaluate_run(
                 "title": {"contains": "Fix login bug"}
             }
         }],
-        "masks": ["id", "created_at", "updated_at", "number", "sort_order"]
+        "ignore_fields": {
+            "global": ["id", "created_at", "updated_at", "number", "sort_order"]
+        }
     }
 )
 
@@ -212,8 +219,9 @@ client.delete_env(envId=env.environmentId)
 ## Running All Tests in a Suite
 
 ```python
-from agent_diff import AgentDiff, PythonExecutorProxy, create_openai_tool
-from agents import Agent, Runner
+from agent_diff import AgentDiff, PythonExecutorProxy, create_langchain_tool
+from langgraph.prebuilt import create_react_agent as create_agent
+from langchain_openai import ChatOpenAI
 
 client = AgentDiff()
 
@@ -221,6 +229,7 @@ client = AgentDiff()
 suite = client.get_test_suite("suite-123", expand=True)
 
 results = []
+model = ChatOpenAI(model="gpt-4o")
 
 for test in suite.tests:
     # Create environment for this test
@@ -228,13 +237,13 @@ for test in suite.tests:
     run = client.start_run(envId=env.environmentId, testId=test.id)
     
     # Run agent
-    executor = PythonExecutorProxy(env.environmentId, client.base_url)
-    agent = Agent(
-        name="Test Agent",
-        tools=[create_openai_tool(executor)],
-        instructions="Use execute_python to interact with Slack API..."
+    executor = PythonExecutorProxy(env.environmentId)
+    agent = create_agent(
+        model=model,
+        tools=[create_langchain_tool(executor)],
+        system_prompt="Use execute_python to interact with the API..."
     )
-    await Runner.run(agent, test.prompt)
+    agent.invoke({"messages": [{"role": "user", "content": test.prompt}]})
     
     # Evaluate
     result = client.evaluate_run(runId=run.runId)
@@ -242,8 +251,7 @@ for test in suite.tests:
     results.append({
         "test": test.name,
         "passed": result.passed,
-        "score": result.score,
-        "failures": result.failures
+        "score": result.score
     })
     
     # Cleanup
@@ -251,14 +259,11 @@ for test in suite.tests:
 
 # Summary
 passed = sum(1 for r in results if r["passed"])
-print(f"\n Results: {passed}/{len(results)} tests passed")
+print(f"\nResults: {passed}/{len(results)} tests passed")
 
 for r in results:
     status = "✓" if r["passed"] else "✗"
     print(f"  {status} {r['test']}")
-    if r["failures"]:
-        for f in r["failures"]:
-            print(f"      └─ {f}")
 ```
 
 ## Test Visibility
