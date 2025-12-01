@@ -295,6 +295,68 @@ If `strict: true` and the agent also changed `priority`, the assertion fails eve
 
 ---
 
+## Masks
+
+Masks let you ignore certain fields when comparing diffs. This is useful for:
+- Auto-generated fields (`id`, `created_at`, `updated_at`)
+- Timestamps that change on every run
+- Fields set by the system, not the agent
+
+### Using Masks
+
+```json
+{
+  "assertions": [{
+    "diff_type": "added",
+    "entity": "messages",
+    "where": {
+      "message_text": {"contains": "Hello"}
+    }
+  }],
+  "masks": [
+    "created_at",
+    "updated_at", 
+    "message_id",
+    "ts"
+  ]
+}
+```
+
+### Common Masks by Service
+
+**Slack:**
+```json
+{
+  "masks": ["ts", "message_id", "created_at", "updated_at", "edited_at"]
+}
+```
+
+**Linear:**
+```json
+{
+  "masks": ["id", "created_at", "updated_at", "sort_order", "number"]
+}
+```
+
+### Entity-Specific Masks
+
+You can mask fields for specific tables:
+
+```json
+{
+  "masks": {
+    "messages": ["ts", "message_id"],
+    "issues": ["created_at", "number", "sort_order"]
+  }
+}
+```
+
+<Tip>
+Without masks, auto-generated timestamps and IDs would cause assertion failures even when the agent performed the correct action.
+</Tip>
+
+---
+
 ## Complete Examples
 
 ### Slack: Post Message to Channel

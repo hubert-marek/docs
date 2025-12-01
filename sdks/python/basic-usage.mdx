@@ -94,11 +94,28 @@ print("Deleted records:", diff.diff['deletes'])
 If you have a test with assertions:
 
 ```python
-# Run assertions against the diff
+# Run assertions against the diff (uses test suite's expectedOutput)
 result = client.evaluate_run(runId=run.runId)
 
 print(f"Passed: {result.passed}")
 print(f"Score: {result.score}")
+```
+
+Or pass assertions explicitly (no test suite needed):
+
+```python
+# Evaluate with explicit expected output
+result = client.evaluate_run(
+    runId=run.runId,
+    expectedOutput={
+        "assertions": [{
+            "diff_type": "added",
+            "entity": "issues",
+            "where": {"title": {"contains": "Fix bug"}}
+        }],
+        "masks": ["id", "created_at", "updated_at"]
+    }
+)
 ```
 
 **Parameters:**
@@ -106,6 +123,15 @@ print(f"Score: {result.score}")
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `runId` | string | Yes | Run ID to evaluate |
+| `expectedOutput` | object | No | Explicit assertions and masks (if not using test suite) |
+
+**Expected Output Structure:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `assertions` | array | List of assertions to check |
+| `masks` | array | Fields to ignore in comparison |
+| `strict` | boolean | Fail on extra changes (default: false) |
 
 ### Get Results
 
