@@ -8,7 +8,7 @@ description: "Verify your AI agent performed the expected actions"
 Evaluations let you verify that your AI agent performed the expected actions. Instead of checking if the agent "said the right thing", you check if it **did the right thing** by examining database state changes.
 
 <CardGroup cols={2}>
-  <Card title="Traditional Evaluation" icon="xmark">
+  <Card title="Mock Evaluation" icon="xmark">
     "Did the agent say it posted a message?" → Maybe ✓
   </Card>
   <Card title="Agent Diff Evaluation" icon="check">
@@ -60,12 +60,12 @@ client.delete_env(envId=env.environmentId)
 
 ## Why State-Based Evaluation?
 
-| Traditional LLM Eval | Agent Diff |
-|---------------------|------------|
-| Fuzzy matching | Deterministic pass/fail |
-| Semantic similarity | Exact field-level assertions |
-| Human review needed | Automated verification |
-| Checks output text | Checks actual side effects |
+| Traditional LLM Eval | Agent Diff                   |
+| -------------------- | ---------------------------- |
+| Fuzzy matching       | Deterministic pass/fail      |
+| Semantic similarity  | Exact field-level assertions |
+| Human review needed  | Automated verification       |
+| Checks output text   | Checks actual side effects   |
 
 ## Next Steps
 
@@ -77,4 +77,3 @@ client.delete_env(envId=env.environmentId)
     See built-in Slack and Linear test suites
   </Card>
 </CardGroup>
-
