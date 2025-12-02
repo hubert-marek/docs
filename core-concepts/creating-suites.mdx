@@ -44,30 +44,34 @@ A test suite is a collection of related tests that share:
 
 ### Test Suite Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `name` | string | Yes | Name of the test suite |
-| `description` | string | Yes | Description of what the suite tests |
-| `visibility` | string | No | `"public"` or `"private"` (default) |
+| Parameter     | Type   | Required | Description                         |
+| ------------- | ------ | -------- | ----------------------------------- |
+| `name`        | string | Yes      | Name of the test suite              |
+| `description` | string | Yes      | Description of what the suite tests |
+| `visibility`  | string | No       | `"public"` or `"private"` (default) |
 
 ### Test Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `name` | string | Yes | Name of the test |
-| `prompt` | string | Yes | Task prompt for the agent |
-| `type` | string | Yes | Test type: `"actionEval"`, `"retriEval"`, or `"compositeEval"` |
-| `environmentTemplate` | string/UUID | Yes | Template name or ID to use |
-| `impersonateUserId` | string | No | User ID the agent acts as |
-| `expected_output` | object | Yes | Expected assertions and ignore_fields |
+| Parameter             | Type        | Required | Description                                                    |
+| --------------------- | ----------- | -------- | -------------------------------------------------------------- |
+| `name`                | string      | Yes      | Name of the test                                               |
+| `prompt`              | string      | Yes      | Task prompt for the agent                                      |
+| `type`                | string      | Yes      | Test type: `"actionEval"`, `"retriEval"`, or `"compositeEval"` |
+| `environmentTemplate` | string/UUID | Yes      | Template name or ID to use                                     |
+| `impersonateUserId`   | string      | No       | User ID the agent acts as                                      |
+| `expected_output`     | object      | Yes      | Expected assertions and ignore_fields                          |
 
 ### Expected Output Structure
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `assertions` | array | List of assertions to evaluate |
-| `ignore_fields` | object | Fields to ignore: `{"global": [...], "entity_name": [...]}` |
-| `strict` | boolean | Fail if extra changes exist (default: false) |
+| Field           | Type    | Description                                                 |
+| --------------- | ------- | ----------------------------------------------------------- |
+| `assertions`    | array   | List of assertions to evaluate                              |
+| `ignore_fields` | object  | Fields to ignore: `{"global": [...], "entity_name": [...]}` |
+| `strict`        | boolean | Fail if extra changes exist (default: false)                |
+
+<Tip>
+  You read more here on how to create the expected output: [writing assertions](https://agentdiff.mintlify.app/core-concepts/assertions)
+</Tip>
 
 ## Listing Test Suites
 
