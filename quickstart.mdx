@@ -3,20 +3,24 @@ title: "Quickstart"
 description: "Get Agent Diff running in 5 minutes"
 ---
 
-<Tip>
-  **Lost? Look at Jupternootbook example:
-  - [Diffs Demo](https://colab.research.google.com/drive/1-GZlU-wgAk0W2v8cpQuPP_UbCNJLmVk5?usp=sharing) - Capture agent actions as diffs
-  - [Evaluations Demo](https://colab.research.google.com/drive/1cfeMQ2R_JpGRdagT0U-D8cngpsHJmJON?usp=sharing) - Run assertions against diffs
-</Tip>
-
 ## Choose Your Setup
 
 <Tabs>
   <Tab title="Hosted (Recommended)">
-    ## Step 1: Get your API key
+    ## Step 0: Get your API key
 
     1. Sign up at [agentdiff.dev](https://agentdiff.dev)
     2. Get your API key from the dashboard
+
+    ## Step 1: Set up the environment variables
+
+    <CodeGroup>
+
+    ```.env
+    AGENT_DIFF_API_KEY="
+    ```
+
+    </CodeGroup>
   </Tab>
   <Tab title="Self-Hosted">
     Run Agent Diff locally with Docker
@@ -69,11 +73,11 @@ pnpm add agent-diff
 ```python Python (Hosted)
 from agent_diff import AgentDiff
 
-# Set env vars first (or pass explicitly):
-# export AGENT_DIFF_API_KEY="ad_live_sk_..."
-# export AGENT_DIFF_BASE_URL="https://api.agentdiff.dev"
-
-client = AgentDiff()  # Auto-loads from env vars
+# For hosted version, pass explicility or add environment variables
+client = AgentDiff(
+    base_url="https://api.agentdiff.dev",
+    api_key="ak_your_api_key"  # From dashboard
+)
 
 # Create isolated Slack environment
 env = client.init_env(
@@ -109,11 +113,11 @@ print(f"API URL: {env.environmentUrl}")
 ```typescript TypeScript (Hosted)
 import { AgentDiff } from 'agent-diff';
 
-// Set env vars first (or pass explicitly):
-// export AGENT_DIFF_API_KEY="ad_live_sk_..."
-// export AGENT_DIFF_BASE_URL="https://api.agentdiff.dev"
-
-const client = new AgentDiff();  // Auto-loads from env vars
+// For hosted version
+const client = new AgentDiff({
+  baseUrl: 'https://api.agentdiff.dev',
+  apiKey: 'ak_your_api_key'  // From dashboard
+});
 
 // Create isolated Slack environment
 const env = await client.initEnv({
@@ -158,8 +162,7 @@ from agents import Agent, Runner
 run = client.start_run(envId=env.environmentId)
 
 # Create code executor that intercepts API calls
-# (auto-loads base_url and token from env vars)
-python_executor = PythonExecutorProxy(env.environmentId)
+python_executor = PythonExecutorProxy(env.environmentId, base_url=client.base_url, token=client.api_key)
 python_tool = create_openai_tool(python_executor)
 
 # Your agent with the tool

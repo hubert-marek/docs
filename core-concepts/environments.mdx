@@ -9,7 +9,7 @@ Agent Diff uses **templates** and **environments** to create isolated test space
 
 <CardGroup cols={2}>
   <Card title="Template" icon="copy">
-    A snapshot of a service's state (users, channels, messages, etc.) that serves as a starting point.
+    A snapshot of a service's state (users, channels, messages, etc.) that serves as a starting point and is used to populate an environment.
   </Card>
   <Card title="Environment" icon="server">
     An isolated copy of a template where your agent operates. Each test gets its own environment.
@@ -23,12 +23,7 @@ Agent Diff uses **templates** and **environments** to create isolated test space
   <Step title="Agent Operates">
     Your agent makes API calls against the isolated environment. Changes only affect this environment.
   </Step>
-  <Step title="Capture Diff">
-    After the agent runs, the system computes what changed (inserts, updates, deletes).
-  </Step>
 </Steps>
-
----
 
 ## Templates
 
@@ -36,46 +31,16 @@ Templates are pre-configured database schemas that serve as starting points.
 
 ### Built-in Templates
 
-| Template              | Service | Description                                |
-| --------------------- | ------- | ------------------------------------------ |
-| `slack_default`       | Slack   | 3 users, 2 channels, 3 messages            |
-| `slack_bench_default` | Slack   | Extended seed for benchmarks               |
-| `linear_default`      | Linear  | Basic teams, users, issues                 |
-| `linear_expanded`     | Linear  | Full seed with projects, cycles, workflows |
-
-### What's Inside a Template?
-
-<Tabs>
-  <Tab title="Slack">
-    **`slack_default` contains:**
-
-    | Entity | Examples |
-    |--------|----------|
-    | Users | `U01AGENBOT9` (agent), `U02JOHNDOE1` (John), `U03JANEDOE2` (Jane) |
-    | Channels | `#general`, `#random` |
-    | Messages | Pre-seeded conversations |
-    
-    <Tip>Use `U01AGENBOT9` as your `impersonateUserId` - this is the agent's identity.</Tip>
-  </Tab>
-  <Tab title="Linear">
-    **`linear_default` contains:**
-
-    | Entity | Examples |
-    |--------|----------|
-    | Teams | Engineering (ENG), Growth (GRO) |
-    | Users | Agent Bot (`2790a7ee-fde0-4537-9588-e233aa5a68d1`), John, Sarah |
-    | Issues | ENG-1, ENG-2, etc. |
-    | Workflow States | Backlog, In Progress, Done |
-    
-    <Tip>Use `2790a7ee-fde0-4537-9588-e233aa5a68d1` as your `impersonateUserId` - this is the agent's identity.</Tip>
-  </Tab>
-</Tabs>
+| Template              | Service | Description                                | impersonateUserId                    |
+| --------------------- | ------- | ------------------------------------------ | ------------------------------------ |
+| `slack_default`       | Slack   | 3 users, 2 channels, 3 messages            | U01AGENBOT9                          |
+| `slack_bench_default` | Slack   | Extended seed for benchmarks               | U01AGENBOT9                          |
+| `linear_default`      | Linear  | Basic teams, users, issues                 | 2790a7ee-fde0-4537-9588-e233aa5a68d1 |
+| `linear_expanded`     | Linear  | Full seed with projects, cycles, workflows | 2790a7ee-fde0-4537-9588-e233aa5a68d1 |
 
 <Tip>
-  **View seed files on GitHub**: [Slack seeds](https://github.com/hubertpysklo/agent-diff/tree/main/examples/slack/seeds) | [Linear seeds](https://github.com/hubertpysklo/agent-diff/tree/main/examples/linear/seeds)
+  **View seed files on GitHub for details of already populated envs**: [Slack seeds](https://github.com/hubertpysklo/agent-diff/tree/main/examples/slack/seeds) | [Linear seeds](https://github.com/hubertpysklo/agent-diff/tree/main/examples/linear/seeds)
 </Tip>
-
----
 
 ## Environments
 
@@ -109,7 +74,7 @@ print(f"API URL: {env.environmentUrl}")
 | `expiresAt`      | Auto-cleanup time (based on TTL) |
 | `status`         | `ready`, `expired`, `deleted`    |
 
-### Isolation Guarantees
+### Isolation 
 
 Each environment has:
 
@@ -184,4 +149,3 @@ custom = client.create_template_from_environment(
     Define expected outcomes
   </Card>
 </CardGroup>
-
