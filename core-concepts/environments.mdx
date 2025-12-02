@@ -31,12 +31,12 @@ Templates are pre-configured database schemas that serve as starting points.
 
 ### Built-in Templates
 
-| Template              | Service | Description                                | impersonateUserId                    |
-| --------------------- | ------- | ------------------------------------------ | ------------------------------------ |
-| `slack_default`       | Slack   | 3 users, 2 channels, 3 messages            | U01AGENBOT9                          |
-| `slack_bench_default` | Slack   | Extended seed for benchmarks               | U01AGENBOT9                          |
-| `linear_default`      | Linear  | Basic teams, users, issues                 | 2790a7ee-fde0-4537-9588-e233aa5a68d1 |
-| `linear_expanded`     | Linear  | Full seed with projects, cycles, workflows | 2790a7ee-fde0-4537-9588-e233aa5a68d1 |
+| Template              | Service  | Description                                | impersonateUserId                      |
+| --------------------- | -------- | ------------------------------------------ | -------------------------------------- |
+| `slack_default`       | `slack`  | 3 users, 2 channels, 3 messages            | `U01AGENBOT9`                          |
+| `slack_bench_default` | `slack`  | Extended seed for benchmarks               | `U01AGENBOT9`                          |
+| `linear_default`      | `linear` | Basic teams, users, issues                 | `2790a7ee-fde0-4537-9588-e233aa5a68d1` |
+| `linear_expanded`     | `linear` | Full seed with projects, cycles, workflows | `2790a7ee-fde0-4537-9588-e233aa5a68d1` |
 
 <Tip>
   **View seed files on GitHub for details of already populated envs**: [Slack seeds](https://github.com/hubertpysklo/agent-diff/tree/main/examples/slack/seeds) | [Linear seeds](https://github.com/hubertpysklo/agent-diff/tree/main/examples/linear/seeds)
@@ -74,7 +74,7 @@ print(f"API URL: {env.environmentUrl}")
 | `expiresAt`      | Auto-cleanup time (based on TTL) |
 | `status`         | `ready`, `expired`, `deleted`    |
 
-### Isolation 
+### Isolation
 
 Each environment has:
 
