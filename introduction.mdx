@@ -17,17 +17,14 @@ description: "Interactive environments for evaluating AI agents & RL training on
 ## Core Concepts
 
 <CardGroup cols={2}>
-  <Card title="Templates" icon="copy" href="/core-concepts/environments">
-    Templates are pre-configured database schemas that serve as starting points for test environments. Think of them as **snapshots of a service's state** that your agent will interact with.
-  </Card>
-  <Card title="Environments" icon="server" href="/core-concepts/environments">
-    Environments are isolated, ephemeral copies of templates where your agents operate. **Each environment gets its own base API URL** that you can proxy to your agents.
+  <Card title="Templates & Environments" icon="copy" href="/core-concepts/environments">
+    Templates are populated database schemas. Environments are isolated, ephemeral copies of templates where your agents operate. **Each environment gets its own base API URL** that you can proxy to your agents.
   </Card>
   <Card title="Runs & Diffs" icon="code-compare" href="/core-concepts/diffs">
     A run represents a single test session within an environment. **Starting a run takes a snapshot, and ending it takes another one and returns a diff** - computed difference between the before and after states of an environment.
   </Card>
   <Card title="Evaluations" icon="check" href="/core-concepts/diffs">
-    Evaluations let you verify that your AI agent performed the expected actions. You can create your own test suites that will **compare expected state change to diff results**, or use our example ones for Linear and Slack. 
+    Evaluations let you verify that your AI agent performed the expected actions. You can create your own test suites that will **compare expected state change to diff results**, or use our example ones for Linear and Slack.
   </Card>
 </CardGroup>
 
