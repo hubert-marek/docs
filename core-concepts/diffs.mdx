@@ -44,7 +44,35 @@ A run represents a single test session within an environment. Starting a run cap
 
 A diff is the computed difference between the before and after states of an environment.
 
-### Structure
+```python
+import requests
+from agent_diff import AgentDiff
+
+client = AgentDiff()
+#Add envs 
+# or pass explicitly: AgentDiff(api_key="", base_url="https://api.agentdiff.dev")
+
+
+# Create sandbox.
+env = client.init_env(templateService="slack", templateName="slack_default", impersonateUserId="U01AGENBOT9")
+run = client.start_run(envId=env.environmentId)
+
+# Post message to #general 
+response = requests.post(
+    f"{client.base_url}/api/env/{env.environmentId}/services/slack/chat.postMessage",
+    headers={"Authorization": f"Bearer {client.api_key}"},
+    json={"channel": "C01ABCD1234", "text": "Hello!"}
+)
+
+# Get diff
+diff = client.diff_run(runId=run.runId)
+pprint(diff.model_dump())
+
+# Cleanup
+client.delete_env(envId=env.environmentId)
+```
+
+### Output Structure
 
 ```json
 {
