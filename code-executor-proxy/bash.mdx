@@ -169,7 +169,7 @@ curl -X POST https://slack.com/api/chat.postMessage \
 executor = BashExecutorProxy(
     environment_id="env-123",
     base_url="http://localhost:8000",
-    token="optional-auth-token"
+    api_key="ad_live_sk_..."
 )
 ```
   </Tab>
@@ -179,7 +179,7 @@ executor = BashExecutorProxy(
 const executor = new BashExecutorProxy(
   environmentId,
   baseUrl,      // Default: http://localhost:8000
-  token         // Optional auth token
+  apiKey        // Optional API key
 );
 ```
   </Tab>

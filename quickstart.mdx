@@ -169,7 +169,7 @@ from agents import Agent, Runner
 run = client.start_run(envId=env.environmentId)
 
 # Create code executor that intercepts API calls
-python_executor = PythonExecutorProxy(env.environmentId, base_url=client.base_url, token=client.api_key)
+python_executor = PythonExecutorProxy(env.environmentId, base_url=client.base_url, api_key=client.api_key)
 python_tool = create_openai_tool(python_executor)
 
 # Your agent with the tool

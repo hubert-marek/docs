@@ -73,7 +73,7 @@ env = client.init_env(testId=test.id)
 run = client.start_run(envId=env.environmentId, testId=test.id)
 
 # Run your agent
-executor = PythonExecutorProxy(env.environmentId, base_url=client.base_url, token=client.api_key)
+executor = PythonExecutorProxy(env.environmentId, base_url=client.base_url, api_key=client.api_key)
 agent = Agent(
     name="Test Agent",
     tools=[create_openai_tool(executor)],

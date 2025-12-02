@@ -21,7 +21,7 @@ export AGENT_DIFF_BASE_URL="https://api.agentdiff.dev"
 ```python
 from agent_diff import PythonExecutorProxy
 
-# Create executor - auto-loads base_url and token from env vars
+# Create executor - auto-loads base_url and api_key from env vars
 executor = PythonExecutorProxy(environment_id="env-123")
 
 # Execute code
@@ -177,7 +177,7 @@ executor = PythonExecutorProxy(environment_id="env-123")
 executor = PythonExecutorProxy(
     environment_id="env-123",
     base_url="https://api.agentdiff.dev",
-    token="ad_live_sk_..."  # Passed as Authorization header
+    api_key="ad_live_sk_..."  # Passed as Authorization header
 )
 ```
 
