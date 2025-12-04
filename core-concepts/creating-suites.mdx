@@ -44,30 +44,34 @@ A test suite is a collection of related tests that share:
 
 ### Test Suite Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `name` | string | Yes | Name of the test suite |
-| `description` | string | Yes | Description of what the suite tests |
-| `visibility` | string | No | `"public"` or `"private"` (default) |
+| Parameter     | Type   | Required | Description                         |
+| ------------- | ------ | -------- | ----------------------------------- |
+| `name`        | string | Yes      | Name of the test suite              |
+| `description` | string | Yes      | Description of what the suite tests |
+| `visibility`  | string | No       | `"public"` or `"private"` (default) |
 
 ### Test Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `name` | string | Yes | Name of the test |
-| `prompt` | string | Yes | Task prompt for the agent |
-| `type` | string | Yes | Test type: `"actionEval"`, `"retriEval"`, or `"compositeEval"` |
-| `environmentTemplate` | string/UUID | Yes | Template name or ID to use |
-| `impersonateUserId` | string | No | User ID the agent acts as |
-| `expected_output` | object | Yes | Expected assertions and ignore_fields |
+| Parameter             | Type        | Required | Description                                                    |
+| --------------------- | ----------- | -------- | -------------------------------------------------------------- |
+| `name`                | string      | Yes      | Name of the test                                               |
+| `prompt`              | string      | Yes      | Task prompt for the agent                                      |
+| `type`                | string      | Yes      | Test type: `"actionEval"`, `"retriEval"`, or `"compositeEval"` |
+| `environmentTemplate` | string/UUID | Yes      | Template name or ID to use                                     |
+| `impersonateUserId`   | string      | No       | User ID the agent acts as                                      |
+| `expected_output`     | object      | Yes      | Expected assertions and ignore_fields                          |
 
 ### Expected Output Structure
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `assertions` | array | List of assertions to evaluate |
-| `ignore_fields` | object | Fields to ignore: `{"global": [...], "entity_name": [...]}` |
-| `strict` | boolean | Fail if extra changes exist (default: false) |
+| Field           | Type    | Description                                                 |
+| --------------- | ------- | ----------------------------------------------------------- |
+| `assertions`    | array   | List of assertions to evaluate                              |
+| `ignore_fields` | object  | Fields to ignore: `{"global": [...], "entity_name": [...]}` |
+| `strict`        | boolean | Fail if extra changes exist (default: false)                |
+
+<Tip>
+  You read more here on how to create the expected output: [writing assertions](https://agentdiff.mintlify.app/core-concepts/assertions)
+</Tip>
 
 ## Listing Test Suites
 
@@ -160,63 +164,11 @@ test2 = client.create_test(suite.id, {
 })
 ```
 
-## Evaluation Without Test Suite
-
-You can run evaluations without a pre-defined test suite by passing the expected output explicitly:
-
-```python
-from agent_diff import AgentDiff, PythonExecutorProxy, create_langchain_tool
-from langgraph.prebuilt import create_react_agent as create_agent
-from langchain_openai import ChatOpenAI
-
-client = AgentDiff()
-
-# Create environment directly with template
-env = client.init_env(
-    templateService="linear",
-    templateName="linear_expanded",
-    impersonateUserId="2790a7ee-fde0-4537-9588-e233aa5a68d1"
-)
-
-# Start run (no testId)
-run = client.start_run(envId=env.environmentId)
-
-# Run your agent...
-model = ChatOpenAI(model="gpt-4o")
-agent = create_agent(
-    model=model,
-    tools=[create_langchain_tool(PythonExecutorProxy(env.environmentId))],
-    system_prompt="Use execute_python to interact with Linear GraphQL API"
-)
-
-prompt = "Create a new issue titled 'Fix login bug' in the Engineering team"
-agent.invoke({"messages": [{"role": "user", "content": prompt}]})
-
-# Evaluate with explicit expected output
-result = client.evaluate_run(
-    runId=run.runId,
-    expectedOutput={
-        "assertions": [{
-            "diff_type": "added",
-            "entity": "issues",
-            "where": {
-                "title": {"contains": "Fix login bug"}
-            }
-        }],
-        "ignore_fields": {
-            "global": ["id", "created_at", "updated_at", "number", "sort_order"]
-        }
-    }
-)
-
-print(f"{'PASSED' if result.passed else 'FAILED'}")
-print(f"Score: {result.score}")
-
-# Cleanup
-client.delete_env(envId=env.environmentId)
-```
-
 ## Running All Tests in a Suite
+
+<Tip>
+  Read more about running tests here: running [evaluations](https://agentdiff.mintlify.app/core-concepts/evaluations)
+</Tip>
 
 ```python
 from agent_diff import AgentDiff, PythonExecutorProxy, create_langchain_tool
@@ -272,28 +224,6 @@ for r in results:
 | ---------- | --------------------------- |
 | `public`   | Visible to all users        |
 | `private`  | Only visible to the creator |
-
-## Built-in Test Suites
-
-### Slack Bench
-
-20 tests covering:
-
-- Message posting
-- Channel operations
-- Reactions
-- Threading
-- User mentions
-
-### Linear Bench
-
-40 tests covering:
-
-- Issue creation/updates
-- Label management
-- Comments
-- Workflow state transitions
-- Team operations
 
 ## Next Steps
 

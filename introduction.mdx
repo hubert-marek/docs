@@ -23,8 +23,11 @@ description: "Interactive environments for evaluating AI agents & RL training on
   <Card title="Runs & Diffs" icon="code-compare" href="/core-concepts/diffs">
     A run represents a single test session within an environment. **Starting a run takes a snapshot, and ending it takes another one and returns a diff** - computed difference between the before and after states of an environment.
   </Card>
-  <Card title="Evaluations" icon="check" href="/core-concepts/diffs">
+  <Card title="Evaluations" icon="check" href="/core-concepts/evaluations">
     Evaluations let you verify that your AI agent performed the expected actions. You can create your own test suites that will **compare expected state change to diff results**, or use our example ones for Linear and Slack.
+  </Card>
+  <Card title="Tests & Assertions" icon="check" href="/core-concepts/creating-suites">
+    Define **test suites** with expected outcomes using our assertion DSL. Each test specifies a prompt, environment template, and assertions that verify the agent made the correct database changes (inserts, updates, deletes).
   </Card>
 </CardGroup>
 

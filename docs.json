@@ -29,7 +29,7 @@
               "core-concepts/evaluations",
               "core-concepts/assertions",
               "test-suites/benchmarks",
-              "test-suites/creating-suites"
+              "core-concepts/creating-suites"
             ],
             "icon": "book"
           },
