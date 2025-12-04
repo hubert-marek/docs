@@ -1,0 +1,50 @@
+---
+title: "Prime Intellect Verifiers"
+description: "Build evaluation environments for AI agents using Agent Diff with the verifiers framework"
+icon: "/images/prime-intellect-logo.jpg"
+---
+
+## Overview
+
+Agent Diff integrates with [Prime Intellect's verifiers](https://github.com/PrimeIntellect-ai/verifiers) framework for multi-turn agent evaluation. This lets you create reproducible benchmarks that evaluate agents on real API interactions.
+
+### Quick Start
+
+Install our Linear API benchmark from the Prime Intellect hub:
+
+```bash
+prime env install hubert-marek/linear-api-bench
+```
+
+Run evaluations with any model:
+
+```bash
+AGENTDIFF_API_KEY="your_key" vf-eval hubert-marek/linear-api-bench -m gpt-5-mini
+```
+
+Results are saved to `outputs/` and viewable with:
+
+```bash
+vf-tui outputs/evals/linear-api-bench--gpt-5-mini/latest
+```
+
+## Example: Linear API Benchmark
+
+See our reference implementation:
+
+- **Environment**: [hubert-marek/linear-api-bench](https://app.primeintellect.ai/dashboard/environments/hubert-marek/linear-api-bench)
+- **Dataset**: [hubertmarek/linear-bench](https://huggingface.co/datasets/hubertmarek/linear-bench)
+- **Source**: [GitHub](https://github.com/hubertpysklo/agent-diff/tree/main/integrations/prime-environments/environments/linear_api_bench)
+
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="OpenAI Agents" icon="robot" href="/integrating-with-agents/openai-agents">
+    Direct integration without verifiers
+  </Card>
+  <Card title="Test Suites" icon="list-check" href="/test-suites/creating-suites">
+    Create custom assertion suites
+  </Card>
+</CardGroup>
+

@@ -61,6 +61,13 @@
               "hosting/neon-setup"
             ],
             "icon": "server"
+          },
+          {
+            "group": "Training Integrations",
+            "pages": [
+              "integrating-with-agents/prime-intellect"
+            ],
+            "icon": "graduation-cap"
           }
         ]
       },
